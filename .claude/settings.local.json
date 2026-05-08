@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn spring-boot:run)",
+      "Bash(npm run *)",
+      "PowerShell(Start-Process powershell -ArgumentList '-NoExit', '-Command', 'cd \"c:\\\\Users\\\\fyffa\\\\Desktop\\\\dersler\\\\envanter-api\\\\envanter-api\"; mvn spring-boot:run')",
+      "PowerShell(Start-Process powershell -ArgumentList '-NoExit', '-Command', 'cd \"c:\\\\Users\\\\fyffa\\\\Desktop\\\\dersler\\\\envanter-ui\"; npm run dev')"
+    ]
+  }
+}

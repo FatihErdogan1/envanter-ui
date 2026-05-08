@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root {
+    @apply h-full bg-bg-primary text-text-primary;
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #0D0D1A; }
+  ::-webkit-scrollbar-thumb { background: #2A2A5A; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #00FFCC; }
+}
+
+@layer components {
+  .pixel-heading {
+    font-family: 'Press Start 2P', monospace;
+    @apply text-accent tracking-wide;
+  }
+
+  .btn-primary {
+    @apply bg-bg-panel border border-accent text-accent font-pixel text-xs px-4 py-2
+           hover:bg-accent hover:text-bg-primary transition-colors duration-150 cursor-pointer
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .btn-danger {
+    @apply bg-bg-panel border border-red text-red font-pixel text-xs px-4 py-2
+           hover:bg-red hover:text-bg-primary transition-colors duration-150 cursor-pointer
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .btn-success {
+    @apply bg-bg-panel border border-green text-green font-pixel text-xs px-4 py-2
+           hover:bg-green hover:text-bg-primary transition-colors duration-150 cursor-pointer
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .btn-info {
+    @apply bg-bg-panel border border-blue text-blue font-pixel text-xs px-4 py-2
+           hover:bg-blue hover:text-bg-primary transition-colors duration-150 cursor-pointer
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .btn-warning {
+    @apply bg-bg-panel border border-yellow text-yellow font-pixel text-xs px-4 py-2
+           hover:bg-yellow hover:text-bg-primary transition-colors duration-150 cursor-pointer
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-bg-panel border border-muted text-muted font-pixel text-xs px-4 py-2
+           hover:border-text-primary hover:text-text-primary transition-colors duration-150 cursor-pointer
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .input-field {
+    @apply bg-bg-primary border border-border text-text-primary px-3 py-2 font-vt text-lg
+           focus:outline-none focus:border-accent transition-colors duration-150 w-full;
+  }
+
+  .card {
+    @apply bg-bg-surface border border-border p-4;
+  }
+
+  .table-header {
+    @apply bg-bg-panel border-b border-border text-accent font-pixel text-xs px-3 py-2 text-left;
+  }
+
+  .table-cell {
+    @apply border-b border-border px-3 py-2 font-vt text-lg text-text-primary;
+  }
+
+  .table-row {
+    @apply hover:bg-bg-panel transition-colors duration-100 cursor-pointer;
+  }
+
+  .table-row-selected {
+    @apply bg-bg-panel border-l-2 border-accent;
+  }
+
+  .status-badge {
+    @apply inline-block px-2 py-0.5 text-sm font-vt border;
+  }
+}

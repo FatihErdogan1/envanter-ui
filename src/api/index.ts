@@ -14,8 +14,8 @@ export const forgotPassword = (email: string) =>
 export const register = (username: string, email: string, password: string) =>
   client.post<string>('/auth/register', { username, email, password });
 
-export const changePassword = (newPassword: string) =>
-  client.post('/auth/change-password', { newPassword });
+export const changePassword = (newPassword: string, currentPassword?: string) =>
+  client.post('/auth/change-password', { newPassword, currentPassword });
 
 // Dashboard
 export const getDashboardStats = () =>

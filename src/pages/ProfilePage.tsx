@@ -45,7 +45,7 @@ export default function ProfilePage() {
 
     setLoading(true);
     try {
-      await changePassword(next);
+      await changePassword(next, current);
       if (user) login(user.token, user.username, user.role, false, user.warehouseId, user.warehouseName);
       setSuccess('Şifre başarıyla güncellendi.');
       setCurrent('');

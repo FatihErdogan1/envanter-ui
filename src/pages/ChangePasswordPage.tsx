@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { changePassword } from '../api';
 import { useAuth } from '../context/AuthContext';
@@ -13,6 +13,10 @@ export default function ChangePasswordPage() {
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!user) navigate('/login', { replace: true });
+  }, [user, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

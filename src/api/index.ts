@@ -1,7 +1,7 @@
 import client from './client';
 import type {
   User, Supplier, Warehouse, Category, Product,
-  Asset, AssetAssignment, InventoryTransaction, DashboardStats, StockRequest
+  Asset, AssetAssignment, InventoryTransaction, DashboardStats, StockRequest, WarehouseStockItem
 } from '../types';
 
 // Auth
@@ -41,6 +41,7 @@ export const getWarehouses = () => client.get<Warehouse[]>('/warehouses');
 export const createWarehouse = (data: Partial<Warehouse>) => client.post<Warehouse>('/warehouses', data);
 export const updateWarehouse = (id: number, data: Partial<Warehouse>) => client.put<Warehouse>(`/warehouses/${id}`, data);
 export const deleteWarehouse = (id: number) => client.delete(`/warehouses/${id}`);
+export const getWarehouseStock = (id: number) => client.get<WarehouseStockItem[]>(`/warehouses/${id}/stock`);
 
 // Categories
 export const getCategories = () => client.get<Category[]>('/categories');

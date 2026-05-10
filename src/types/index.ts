@@ -10,7 +10,7 @@ export interface User {
   role: Role;
   active: boolean;
   forcePasswordChange: boolean;
-  warehouse?: { id: number; name: string; location: string } | null;
+  warehouse?: { id: number; name: string; locationAddress: string } | null;
 }
 
 export interface Supplier {
@@ -24,7 +24,7 @@ export interface Supplier {
 export interface Warehouse {
   id: number;
   name: string;
-  location: string;
+  locationAddress: string;
 }
 
 export interface Category {
@@ -87,6 +87,13 @@ export interface StockRequest {
   managerNote?: string | null;
 }
 
+export interface WarehouseStockItem {
+  productId: number;
+  productName: string;
+  sku: string;
+  quantity: number;
+}
+
 export interface DashboardStats {
   totalUsers: number;
   totalProducts: number;
@@ -96,4 +103,5 @@ export interface DashboardStats {
   inUseAssets: number;
   maintenanceAssets: number;
   retiredAssets: number;
+  criticalStockCount: number;
 }

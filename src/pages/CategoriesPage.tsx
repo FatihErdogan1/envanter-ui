@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCategories, createCategory, updateCategory, deleteCategory } from '../api';
 import type { Category } from '../types';
 import PageHeader from '../components/ui/PageHeader';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
+import SearchInput from '../components/ui/SearchInput';
 import DataTable, { Column } from '../components/ui/DataTable';
 import Modal from '../components/ui/Modal';
 import { useAuth } from '../context/AuthContext';
@@ -19,8 +20,16 @@ export default function CategoriesPage() {
   const [modal, setModal] = useState<'add' | 'edit' | null>(null);
   const [form, setForm] = useState<FormData>(blank);
   const [apiError, setApiError] = useState('');
+  const [search, setSearch] = useState('');
 
   const { data: categories = [], isLoading } = useQuery({ queryKey: ['categories'], queryFn: () => getCategories().then(r => r.data) });
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return q ? categories.filter(c =>
+      c.name.toLowerCase().includes(q) ||
+      (c.description ?? '').toLowerCase().includes(q)
+    ) : categories;
+  }, [categories, search]);
   const refetch = () => qc.invalidateQueries({ queryKey: ['categories'] });
   const addMut  = useMutation({ mutationFn: (d: FormData) => createCategory(d), onSuccess: () => { refetch(); setModal(null); } });
   const editMut = useMutation({ mutationFn: (d: FormData) => updateCategory(selected!.id, d), onSuccess: () => { refetch(); setModal(null); } });
@@ -43,7 +52,7 @@ export default function CategoriesPage() {
 
   return (
     <div>
-      <PageHeader title="KATEGORİLER">
+      <PageHeader title="KATEGORİLER" search={<SearchInput value={search} onChange={setSearch} />}>
         {canManageOperations && (
           <>
             <Button onClick={() => { setForm(blank); setApiError(''); setModal('add'); }}>+ EKLE</Button>
@@ -53,7 +62,7 @@ export default function CategoriesPage() {
         )}
       </PageHeader>
 
-      <DataTable columns={columns} data={categories} rowKey={c => c.id} onRowClick={setSelected} selectedId={selected?.id} />
+      <DataTable columns={columns} data={filtered} rowKey={c => c.id} onRowClick={setSelected} selectedId={selected?.id} />
 
       {modal && (
         <Modal title={modal === 'add' ? 'KATEGORİ EKLE' : 'KATEGORİ DÜZENLE'} onClose={() => setModal(null)}

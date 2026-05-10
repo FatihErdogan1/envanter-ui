@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getUsers, createUser, updateUser, deleteUser, resetUserPassword, getWarehouses } from '../api';
 import type { User, Role, Warehouse } from '../types';
 import PageHeader from '../components/ui/PageHeader';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
+import SearchInput from '../components/ui/SearchInput';
 import DataTable, { Column } from '../components/ui/DataTable';
 import Modal from '../components/ui/Modal';
 
@@ -20,9 +21,19 @@ export default function UsersPage() {
   const [tempPassword, setTempPassword] = useState('');
   const [copied, setCopied] = useState(false);
   const [apiError, setApiError] = useState('');
+  const [search, setSearch] = useState('');
 
   const { data: users = [], isLoading } = useQuery({ queryKey: ['users'], queryFn: () => getUsers().then(r => r.data) });
   const filteredUsers = users.filter(u => u.role !== 'ADMIN');
+  const displayed = useMemo(() => {
+    const q = search.toLowerCase();
+    return q ? filteredUsers.filter(u =>
+      u.username.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q) ||
+      u.role.toLowerCase().includes(q) ||
+      (u.warehouse?.name ?? '').toLowerCase().includes(q)
+    ) : filteredUsers;
+  }, [filteredUsers, search]);
   const { data: warehouses = [] } = useQuery<Warehouse[]>({ queryKey: ['warehouses'], queryFn: () => getWarehouses().then(r => r.data) });
 
   const refetch = () => qc.invalidateQueries({ queryKey: ['users'] });
@@ -74,14 +85,14 @@ export default function UsersPage() {
 
   return (
     <div>
-      <PageHeader title="KULLANICILAR">
+      <PageHeader title="KULLANICILAR" search={<SearchInput value={search} onChange={setSearch} />}>
         <Button onClick={openAdd}>+ EKLE</Button>
         <Button variant="secondary" onClick={openEdit} disabled={!selected || selected.role === 'ADMIN'}>DÜZENLE</Button>
         <Button variant="secondary" onClick={() => selected && resetMut.mutate(selected.id)} disabled={!selected || selected.role === 'ADMIN'}>ŞİFRE SIFIRLA</Button>
         <Button variant="danger" onClick={handleDelete} disabled={!selected || selected.role === 'ADMIN'}>SİL</Button>
       </PageHeader>
 
-      <DataTable columns={columns} data={filteredUsers} rowKey={u => u.id} onRowClick={setSelected} selectedId={selected?.id} />
+      <DataTable columns={columns} data={displayed} rowKey={u => u.id} onRowClick={setSelected} selectedId={selected?.id} />
 
       {(modal === 'add' || modal === 'edit') && (
         <Modal title={modal === 'add' ? 'KULLANICI EKLE' : 'KULLANICI DÜZENLE'} onClose={() => setModal(null)}

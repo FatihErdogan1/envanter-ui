@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getTransactions, stockIn, stockOut, transfer, getProducts, getWarehouses,
@@ -8,6 +8,7 @@ import type { InventoryTransaction, StockRequest, StockRequestStatus } from '../
 import PageHeader from '../components/ui/PageHeader';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
+import SearchInput from '../components/ui/SearchInput';
 import DataTable, { Column } from '../components/ui/DataTable';
 import Modal from '../components/ui/Modal';
 import { useAuth } from '../context/AuthContext';
@@ -25,11 +26,29 @@ export default function InventoryPage() {
   const [form, setForm] = useState({ productId: '', warehouseId: '', toWarehouseId: '', quantity: '', notes: '' });
   const [requestForm, setRequestForm] = useState({ productId: '', warehouseId: '', quantity: '', notes: '', managerNote: '' });
   const [apiError, setApiError] = useState('');
+  const [search, setSearch] = useState('');
 
   const { data: txs = [], isLoading } = useQuery({ queryKey: ['transactions'], queryFn: () => getTransactions().then(r => r.data) });
   const { data: products = [] } = useQuery({ queryKey: ['products'], queryFn: () => getProducts().then(r => r.data) });
   const { data: warehouses = [] } = useQuery({ queryKey: ['warehouses'], queryFn: () => getWarehouses().then(r => r.data) });
   const { data: stockRequests = [] } = useQuery({ queryKey: ['stock-requests'], queryFn: () => getStockRequests().then(r => r.data) });
+
+  const filteredTxs = useMemo(() => {
+    const q = search.toLowerCase();
+    return q ? txs.filter(t =>
+      (t.product?.name ?? '').toLowerCase().includes(q) ||
+      (t.warehouse?.name ?? '').toLowerCase().includes(q) ||
+      t.type.toLowerCase().includes(q)
+    ) : txs;
+  }, [txs, search]);
+  const filteredRequests = useMemo(() => {
+    const q = search.toLowerCase();
+    return q ? stockRequests.filter(r =>
+      (r.product?.name ?? '').toLowerCase().includes(q) ||
+      (r.warehouse?.name ?? '').toLowerCase().includes(q) ||
+      (r.requestedBy?.username ?? '').toLowerCase().includes(q)
+    ) : stockRequests;
+  }, [stockRequests, search]);
 
   const refetch = () => qc.invalidateQueries({ queryKey: ['transactions'] });
   const inMut  = useMutation({ mutationFn: (d: object) => stockIn(d),  onSuccess: () => { refetch(); setModal(null); } });
@@ -134,7 +153,7 @@ export default function InventoryPage() {
 
   return (
     <div>
-      <PageHeader title="STOK HAREKETLERİ">
+      <PageHeader title="STOK HAREKETLERİ" search={<SearchInput value={search} onChange={setSearch} />}>
         {canManageOperations && (
           <>
             <Button onClick={() => openModal('in')}>STOK GİRİŞİ</Button>
@@ -154,9 +173,9 @@ export default function InventoryPage() {
         ))}
       </div>
 
-      {tab === 'transactions' && <DataTable columns={columns} data={txs} rowKey={t => t.id} emptyText="Henüz işlem yok." />}
+      {tab === 'transactions' && <DataTable columns={columns} data={filteredTxs} rowKey={t => t.id} emptyText="Henüz işlem yok." />}
       {tab === 'requests' && (
-        <DataTable columns={requestColumns} data={stockRequests} rowKey={r => r.id}
+        <DataTable columns={requestColumns} data={filteredRequests} rowKey={r => r.id}
           onRowClick={r => { setSelectedRequest(r); if (canManageOperations && r.status === 'PENDING') openReview(r); }}
           selectedId={selectedRequest?.id} emptyText="Henüz talep yok." />
       )}

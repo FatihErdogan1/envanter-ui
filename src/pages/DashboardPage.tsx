@@ -53,15 +53,17 @@ interface SummaryCardProps {
   value: number;
   accent: string;
   borderColor: string;
+  to?: string;
 }
 
-function SummaryCard({ label, value, accent, borderColor }: SummaryCardProps) {
-  return (
-    <div className={`card flex flex-col gap-3 border-t-2 ${borderColor}`}>
+function SummaryCard({ label, value, accent, borderColor, to }: SummaryCardProps) {
+  const inner = (
+    <div className={`card flex flex-col gap-3 border-t-2 ${borderColor} ${to ? 'hover:opacity-80 transition-opacity cursor-pointer' : ''}`}>
       <span className="font-pixel text-muted" style={{ fontSize: '9px' }}>{label}</span>
       <span className={`font-vt text-5xl ${accent}`}>{value}</span>
     </div>
   );
+  return to ? <Link to={to}>{inner}</Link> : inner;
 }
 
 interface AssetBarProps {
@@ -116,6 +118,7 @@ const quickLinks = [
 ];
 
 export default function DashboardPage() {
+  const { user } = useAuth();
   const { data, isLoading, error } = useQuery({
     queryKey: ['dashboard'],
     queryFn: () => getDashboardStats().then((r) => r.data),
@@ -130,11 +133,14 @@ export default function DashboardPage() {
       <UserBanner />
 
       {/* Özet istatistikler */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <SummaryCard label="ÜRÜNLER"      value={data.totalProducts}   accent="text-accent"  borderColor="border-accent" />
-        <SummaryCard label="DEMİRBAŞLAR"  value={data.totalAssets}     accent="text-blue"    borderColor="border-blue" />
-        <SummaryCard label="DEPOLAR"      value={data.totalWarehouses} accent="text-accent2" borderColor="border-accent2" />
-        <SummaryCard label="KULLANICILAR" value={data.totalUsers}      accent="text-green"   borderColor="border-green" />
+      <div className={`grid grid-cols-2 gap-4 ${user?.role === 'ADMIN' ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
+        <SummaryCard label="ÜRÜNLER"      value={data.totalProducts}    accent="text-accent"  borderColor="border-accent"  to="/products" />
+        <SummaryCard label="KRİTİK STOK"  value={data.criticalStockCount} accent="text-red"   borderColor="border-red"     to="/products?lowStock=true" />
+        <SummaryCard label="DEMİRBAŞLAR"  value={data.totalAssets}      accent="text-blue"    borderColor="border-blue"    to="/assets" />
+        <SummaryCard label="DEPOLAR"      value={data.totalWarehouses}  accent="text-accent2" borderColor="border-accent2" to="/warehouses" />
+        {user?.role === 'ADMIN' && (
+          <SummaryCard label="KULLANICILAR" value={data.totalUsers} accent="text-green" borderColor="border-green" to="/users" />
+        )}
       </div>
 
       {/* Demirbaş durum çubuğu */}

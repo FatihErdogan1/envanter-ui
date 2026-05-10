@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSuppliers, createSupplier, updateSupplier, deleteSupplier } from '../api';
 import type { Supplier } from '../types';
 import PageHeader from '../components/ui/PageHeader';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
+import SearchInput from '../components/ui/SearchInput';
 import DataTable, { Column } from '../components/ui/DataTable';
 import Modal from '../components/ui/Modal';
 import { useAuth } from '../context/AuthContext';
@@ -19,11 +20,21 @@ export default function SuppliersPage() {
   const [modal, setModal] = useState<'add' | 'edit' | null>(null);
   const [form, setForm] = useState<FormData>(blank);
   const [formError, setFormError] = useState('');
+  const [search, setSearch] = useState('');
 
   const { data: suppliers = [], isLoading } = useQuery({
     queryKey: ['suppliers'],
     queryFn: () => getSuppliers().then(r => r.data),
   });
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return q ? suppliers.filter(s =>
+      s.name.toLowerCase().includes(q) ||
+      (s.email ?? '').toLowerCase().includes(q) ||
+      s.phone.toLowerCase().includes(q) ||
+      (s.address ?? '').toLowerCase().includes(q)
+    ) : suppliers;
+  }, [suppliers, search]);
 
   const refetch = () => qc.invalidateQueries({ queryKey: ['suppliers'] });
   const addMut  = useMutation({ mutationFn: (d: FormData) => createSupplier(d), onSuccess: () => { refetch(); setModal(null); } });
@@ -75,7 +86,7 @@ export default function SuppliersPage() {
 
   return (
     <div>
-      <PageHeader title="TEDARİKÇİLER">
+      <PageHeader title="TEDARİKÇİLER" search={<SearchInput value={search} onChange={setSearch} />}>
         {canManageOperations && (
           <>
             <Button onClick={() => { setForm(blank); setFormError(''); setModal('add'); }}>+ EKLE</Button>
@@ -91,7 +102,7 @@ export default function SuppliersPage() {
         )}
       </PageHeader>
 
-      <DataTable columns={columns} data={suppliers} rowKey={s => s.id} onRowClick={setSelected} selectedId={selected?.id} />
+      <DataTable columns={columns} data={filtered} rowKey={s => s.id} onRowClick={setSelected} selectedId={selected?.id} />
 
       {modal && (
         <Modal

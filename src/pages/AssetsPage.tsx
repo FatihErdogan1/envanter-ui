@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getAssets, createAsset,
@@ -8,6 +8,7 @@ import {
 import type { Asset, AssetAssignment, AssetStatus } from '../types';
 import PageHeader from '../components/ui/PageHeader';
 import Button from '../components/ui/Button';
+import SearchInput from '../components/ui/SearchInput';
 import DataTable, { Column } from '../components/ui/DataTable';
 import Modal from '../components/ui/Modal';
 import StatusBadge from '../components/ui/StatusBadge';
@@ -25,10 +26,21 @@ export default function AssetsPage() {
   const [assignForm, setAssignForm] = useState({ userId: '', notes: '' });
   const [maintenanceForm, setMaintenanceForm] = useState({ description: '', notes: '' });
   const [apiError, setApiError] = useState('');
+  const [search, setSearch] = useState('');
 
   const refetchAssets = () => qc.invalidateQueries({ queryKey: ['assets'] });
 
   const { data: assets = [], isLoading } = useQuery({ queryKey: ['assets'], queryFn: () => getAssets().then(r => r.data) });
+  const filteredAssets = useMemo(() => {
+    const q = search.toLowerCase();
+    return q ? assets.filter(a =>
+      a.serialNumber.toLowerCase().includes(q) ||
+      a.name.toLowerCase().includes(q) ||
+      (a.assignedToUsername ?? '').toLowerCase().includes(q) ||
+      (a.supplier?.name ?? '').toLowerCase().includes(q) ||
+      (a.warehouse?.name ?? '').toLowerCase().includes(q)
+    ) : assets;
+  }, [assets, search]);
   const { data: suppliers = [] } = useQuery({ queryKey: ['suppliers'], queryFn: () => getSuppliers().then(r => r.data) });
   const { data: warehouses = [] } = useQuery({ queryKey: ['warehouses'], queryFn: () => getWarehouses().then(r => r.data) });
   const { data: users = [], error: usersError } = useQuery({ queryKey: ['assignable-users'], queryFn: () => getAssignableUsers().then(r => r.data) });
@@ -142,7 +154,7 @@ export default function AssetsPage() {
 
   return (
     <div>
-      <PageHeader title="DEMİRBAŞLAR">
+      <PageHeader title="DEMİRBAŞLAR" search={<SearchInput value={search} onChange={setSearch} />}>
         {canManageOperations && (
           <>
             <Button onClick={() => { setForm({ serialNumber: '', name: '', supplierId: '', warehouseId: '' }); setApiError(''); setModal('add'); }}>+ EKLE</Button>
@@ -161,7 +173,7 @@ export default function AssetsPage() {
       </div>
 
       {tab === 'assets' && (
-        <DataTable columns={assetCols} data={assets} rowKey={a => a.id} onRowClick={a => { setSelected(a); setTab('assets'); }} selectedId={selected?.id} />
+        <DataTable columns={assetCols} data={filteredAssets} rowKey={a => a.id} onRowClick={a => { setSelected(a); setTab('assets'); }} selectedId={selected?.id} />
       )}
       {tab === 'history' && !selected && (
         <p className="text-muted font-vt text-xl">Geçmişi görüntülemek için önce bir demirbaş seçin.</p>

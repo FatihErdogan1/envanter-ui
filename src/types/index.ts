@@ -62,6 +62,15 @@ export interface AssetAssignment {
   notes: string;
 }
 
+export interface AssetMaintenance {
+  id: number;
+  assetId: number;
+  description: string;
+  notes: string | null;
+  startDate: string;
+  endDate: string | null;
+}
+
 export interface InventoryTransaction {
   id: number;
   product: Product;

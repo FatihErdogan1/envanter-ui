@@ -1,7 +1,7 @@
 import client from './client';
 import type {
   User, Supplier, Warehouse, Category, Product,
-  Asset, AssetAssignment, InventoryTransaction, DashboardStats, StockRequest, WarehouseStockItem
+  Asset, AssetAssignment, AssetMaintenance, InventoryTransaction, DashboardStats, StockRequest, WarehouseStockItem
 } from '../types';
 
 // Auth
@@ -72,6 +72,8 @@ export const endAssetMaintenance = (assetId: number) =>
   client.post(`/assets/${assetId}/maintenance/end`);
 export const getAssetAssignments = (assetId: number) =>
   client.get<AssetAssignment[]>(`/assets/${assetId}/assignments`);
+export const getAssetMaintenance = (assetId: number) =>
+  client.get<AssetMaintenance[]>(`/assets/${assetId}/maintenance`);
 
 // Inventory
 export const getTransactions = () => client.get<InventoryTransaction[]>('/inventory/transactions');

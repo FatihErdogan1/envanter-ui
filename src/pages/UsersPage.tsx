@@ -106,7 +106,6 @@ export default function UsersPage() {
               <select className="input-field" value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value as Role }))}>
                 <option value="STAFF">STAFF</option>
                 <option value="MANAGER">MANAGER</option>
-                {modal === 'edit' && <option value="ADMIN">ADMIN</option>}
               </select>
             </div>
             <div className="flex flex-col gap-1">

@@ -18,7 +18,7 @@ type RequestModal = 'request' | 'review' | null;
 
 export default function InventoryPage() {
   const qc = useQueryClient();
-  const { canManageOperations } = useAuth();
+  const { canManageOperations, user, isAdmin } = useAuth();
   const [tab, setTab] = useState<'transactions' | 'requests'>('transactions');
   const [modal, setModal] = useState<TxModal>(null);
   const [requestModal, setRequestModal] = useState<RequestModal>(null);
@@ -32,6 +32,8 @@ export default function InventoryPage() {
   const { data: products = [] } = useQuery({ queryKey: ['products'], queryFn: () => getProducts().then(r => r.data) });
   const { data: warehouses = [] } = useQuery({ queryKey: ['warehouses'], queryFn: () => getWarehouses().then(r => r.data) });
   const { data: stockRequests = [] } = useQuery({ queryKey: ['stock-requests'], queryFn: () => getStockRequests().then(r => r.data) });
+
+  const sourceWarehouses = isAdmin ? warehouses : warehouses.filter(w => w.id === user?.warehouseId);
 
   const filteredTxs = useMemo(() => {
     const q = search.toLowerCase();
@@ -187,7 +189,7 @@ export default function InventoryPage() {
           footer={<><Button variant="secondary" onClick={() => setModal(null)}>İPTAL</Button><Button onClick={submit}>KAYDET</Button></>}
         >
           <div className="flex flex-col gap-3">
-            {[{ k: 'productId', label: 'ÜRÜN', items: products }, { k: 'warehouseId', label: modal === 'transfer' ? 'KAYNAK DEPO' : 'DEPO', items: warehouses }].map(({ k, label, items }) => (
+            {[{ k: 'productId', label: 'ÜRÜN', items: products }, { k: 'warehouseId', label: modal === 'transfer' ? 'KAYNAK DEPO' : 'DEPO', items: modal === 'in' ? warehouses : sourceWarehouses }].map(({ k, label, items }) => (
               <div key={k} className="flex flex-col gap-1">
                 <label className="text-muted font-pixel text-xs">{label}</label>
                 <select className="input-field" value={form[k as keyof typeof form]} onChange={f(k as keyof typeof form)}>
@@ -216,7 +218,7 @@ export default function InventoryPage() {
         <Modal title="STOK TALEBİ" onClose={() => setRequestModal(null)}
           footer={<><Button variant="secondary" onClick={() => setRequestModal(null)}>İPTAL</Button><Button onClick={submitRequest}>GÖNDER</Button></>}>
           <div className="flex flex-col gap-3">
-            {[{ k: 'productId', label: 'ÜRÜN', items: products }, { k: 'warehouseId', label: 'DEPO', items: warehouses }].map(({ k, label, items }) => (
+            {[{ k: 'productId', label: 'ÜRÜN', items: products }, { k: 'warehouseId', label: 'DEPO', items: sourceWarehouses }].map(({ k, label, items }) => (
               <div key={k} className="flex flex-col gap-1">
                 <label className="text-muted font-pixel text-xs">{label}</label>
                 <select className="input-field" value={requestForm[k as keyof typeof requestForm]} onChange={rf(k as keyof typeof requestForm)}>

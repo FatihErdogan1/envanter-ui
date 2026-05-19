@@ -1,9 +1,11 @@
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { getDashboardStats } from '../api';
+import { getAssets, getDashboardStats, getWarehouseStock } from '../api';
 import PageHeader from '../components/ui/PageHeader';
+import DataTable, { Column } from '../components/ui/DataTable';
 import { useAuth } from '../context/AuthContext';
-import type { DashboardStats } from '../types';
+import type { DashboardStats, WarehouseStockItem } from '../types';
 
 const roleLabel: Record<string, string> = {
   ADMIN:   'YÖNETİCİ',
@@ -118,14 +120,52 @@ const quickLinks = [
 ];
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const isWarehouseScoped = !isAdmin && user?.warehouseId != null;
   const { data, isLoading, error } = useQuery({
-    queryKey: ['dashboard'],
+    queryKey: ['dashboard', user?.warehouseId],
     queryFn: () => getDashboardStats().then((r) => r.data),
   });
+  const { data: assets = [], isLoading: assetsLoading } = useQuery({
+    queryKey: ['dashboard-assets', user?.warehouseId],
+    queryFn: () => getAssets().then((r) => r.data),
+    enabled: isWarehouseScoped,
+  });
+  const { data: warehouseStock = [], isLoading: stockLoading } = useQuery({
+    queryKey: ['dashboard-warehouse-stock', user?.warehouseId],
+    queryFn: () => getWarehouseStock(user!.warehouseId!).then((r) => r.data),
+    enabled: isWarehouseScoped,
+  });
 
-  if (isLoading) return <p className="text-muted font-vt text-2xl">Yükleniyor...</p>;
-  if (error || !data) return <p className="text-red font-vt text-2xl">Veri yüklenemedi.</p>;
+  const scopedAssets = useMemo(() => (
+    isWarehouseScoped
+      ? assets.filter((asset) => asset.warehouse?.id === user?.warehouseId)
+      : assets
+  ), [assets, isWarehouseScoped, user?.warehouseId]);
+
+  const displayStats = useMemo<DashboardStats | null>(() => {
+    if (!data) return null;
+    if (!isWarehouseScoped) return data;
+
+    return {
+      ...data,
+      totalAssets: scopedAssets.length,
+      totalWarehouses: 1,
+      availableAssets: scopedAssets.filter((asset) => asset.status === 'AVAILABLE').length,
+      inUseAssets: scopedAssets.filter((asset) => asset.status === 'IN_USE').length,
+      maintenanceAssets: scopedAssets.filter((asset) => asset.status === 'MAINTENANCE').length,
+      retiredAssets: scopedAssets.filter((asset) => asset.status === 'RETIRED').length,
+    };
+  }, [data, isWarehouseScoped, scopedAssets]);
+
+  const stockColumns: Column<WarehouseStockItem>[] = [
+    { key: 'productName', header: 'ÜRÜN ADI' },
+    { key: 'sku',         header: 'SKU' },
+    { key: 'quantity',    header: 'MİKTAR' },
+  ];
+
+  if (isLoading || assetsLoading) return <p className="text-muted font-vt text-2xl">Yükleniyor...</p>;
+  if (error || !displayStats) return <p className="text-red font-vt text-2xl">Veri yüklenemedi.</p>;
 
   return (
     <div className="flex flex-col gap-6">
@@ -134,17 +174,34 @@ export default function DashboardPage() {
 
       {/* Özet istatistikler */}
       <div className={`grid grid-cols-2 gap-4 ${user?.role === 'ADMIN' ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
-        <SummaryCard label="ÜRÜNLER"      value={data.totalProducts}    accent="text-accent"  borderColor="border-accent"  to="/products" />
-        <SummaryCard label="KRİTİK STOK"  value={data.criticalStockCount} accent="text-red"   borderColor="border-red"     to="/products?lowStock=true" />
-        <SummaryCard label="DEMİRBAŞLAR"  value={data.totalAssets}      accent="text-blue"    borderColor="border-blue"    to="/assets" />
-        <SummaryCard label="DEPOLAR"      value={data.totalWarehouses}  accent="text-accent2" borderColor="border-accent2" to="/warehouses" />
+        <SummaryCard label="ÜRÜNLER"      value={displayStats.totalProducts}    accent="text-accent"  borderColor="border-accent"  to="/products" />
+        <SummaryCard label="KRİTİK STOK"  value={displayStats.criticalStockCount} accent="text-red"   borderColor="border-red"     to="/products?lowStock=true" />
+        <SummaryCard label="DEMİRBAŞLAR"  value={displayStats.totalAssets}      accent="text-blue"    borderColor="border-blue"    to="/assets" />
+        <SummaryCard label="DEPOLAR"      value={displayStats.totalWarehouses}  accent="text-accent2" borderColor="border-accent2" to="/warehouses" />
         {user?.role === 'ADMIN' && (
-          <SummaryCard label="KULLANICILAR" value={data.totalUsers} accent="text-green" borderColor="border-green" to="/users" />
+          <SummaryCard label="KULLANICILAR" value={displayStats.totalUsers} accent="text-green" borderColor="border-green" to="/users" />
         )}
       </div>
 
       {/* Demirbaş durum çubuğu */}
-      <AssetStatusBar stats={data} />
+      <AssetStatusBar stats={displayStats} />
+
+      {isWarehouseScoped && (
+        <div className="card flex flex-col gap-4">
+          <div className="flex items-center justify-between gap-3">
+            <span className="font-pixel text-muted" style={{ fontSize: '9px' }}>DEPO STOK — {user?.warehouseName ?? 'DEPO'}</span>
+            <Link to="/inventory" className="font-pixel text-accent hover:text-text-primary transition-colors" style={{ fontSize: '8px' }}>
+              STOK GİRİŞİ →
+            </Link>
+          </div>
+          {stockLoading
+            ? <p className="text-muted font-vt text-xl">Yükleniyor...</p>
+            : warehouseStock.length === 0
+              ? <p className="text-muted font-vt text-lg">Bu depoda stok bulunamadı.</p>
+              : <DataTable columns={stockColumns} data={warehouseStock} rowKey={(stock) => stock.productId} />
+          }
+        </div>
+      )}
 
       {/* Hızlı erişim */}
       <div className="card flex flex-col gap-4">

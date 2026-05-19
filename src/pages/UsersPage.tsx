@@ -140,7 +140,7 @@ export default function UsersPage() {
             <div className="flex flex-col gap-1">
               <label className="text-muted font-pixel text-xs">DEPO</label>
               <select className="input-field" value={form.warehouseId} onChange={e => setForm(p => ({ ...p, warehouseId: e.target.value }))}>
-                <option value="">Depo Yok (Admin)</option>
+                <option value="" disabled>— Depo seçiniz —</option>
                 {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
               </select>
             </div>

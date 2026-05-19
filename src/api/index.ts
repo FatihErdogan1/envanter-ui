@@ -1,6 +1,6 @@
 import client from './client';
 import type {
-  User, Supplier, Warehouse, Category, Product,
+  User, Supplier, Warehouse, Category, Product, ProductWarehouseStock,
   Asset, AssetAssignment, AssetMaintenance, InventoryTransaction, DashboardStats, StockRequest, WarehouseStockItem
 } from '../types';
 
@@ -54,6 +54,9 @@ export const getProducts = () => client.get<Product[]>('/products');
 export const createProduct = (data: object) => client.post<Product>('/products', data);
 export const updateProduct = (id: number, data: object) => client.put<Product>(`/products/${id}`, data);
 export const deleteProduct = (id: number) => client.delete(`/products/${id}`);
+export const getProductStockSummary = (id: number) => client.get<ProductWarehouseStock[]>(`/products/${id}/stock-summary`);
+export const getProductSuppliers = (id: number) => client.get<Supplier[]>(`/products/${id}/suppliers`);
+export const getProductTransactionHistory = (id: number) => client.get<InventoryTransaction[]>(`/products/${id}/transaction-history`);
 
 // Assets
 export const getAssets = () => client.get<Asset[]>('/assets');

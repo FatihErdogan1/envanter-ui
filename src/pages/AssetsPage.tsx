@@ -1,12 +1,15 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  getAssets, createAsset,
+  getAssets, createAsset, deleteAsset,
   getAssetAssignments, getAssetMaintenance,
   assignAsset, returnAsset, retireAsset, startAssetMaintenance, endAssetMaintenance,
   getSuppliers, getWarehouses, getAssignableUsers
 } from '../api';
+import { extractApiError } from '../utils/errorUtils';
 import type { Asset, AssetAssignment, AssetMaintenance, AssetStatus } from '../types';
+
+type Notification = { type: 'success' | 'error'; message: string };
 import PageHeader from '../components/ui/PageHeader';
 import Button from '../components/ui/Button';
 import SearchInput from '../components/ui/SearchInput';
@@ -15,6 +18,7 @@ import Modal from '../components/ui/Modal';
 import StatusBadge from '../components/ui/StatusBadge';
 import Input from '../components/ui/Input';
 import { useAuth } from '../context/AuthContext';
+import { ClipboardList, Trash2 } from 'lucide-react';
 
 export default function AssetsPage() {
   const qc = useQueryClient();
@@ -28,20 +32,24 @@ export default function AssetsPage() {
   const [maintenanceForm, setMaintenanceForm] = useState({ description: '', notes: '' });
   const [apiError, setApiError] = useState('');
   const [search, setSearch] = useState('');
+  const [notification, setNotification] = useState<Notification | null>(null);
 
   const refetchAssets = () => qc.invalidateQueries({ queryKey: ['assets'] });
 
   const { data: assets = [], isLoading, isError } = useQuery({ queryKey: ['assets'], queryFn: () => getAssets().then(r => r.data) });
+  const scopedAssets = useMemo(() => (
+    isAdmin ? assets : assets.filter(a => a.warehouse?.id === user?.warehouseId)
+  ), [assets, isAdmin, user?.warehouseId]);
   const filteredAssets = useMemo(() => {
     const q = search.toLowerCase();
-    return q ? assets.filter(a =>
+    return q ? scopedAssets.filter(a =>
       a.serialNumber.toLowerCase().includes(q) ||
       a.name.toLowerCase().includes(q) ||
       (a.assignedToUsername ?? '').toLowerCase().includes(q) ||
       (a.supplier?.name ?? '').toLowerCase().includes(q) ||
       (a.warehouse?.name ?? '').toLowerCase().includes(q)
-    ) : assets;
-  }, [assets, search]);
+    ) : scopedAssets;
+  }, [scopedAssets, search]);
   const { data: suppliers = [] } = useQuery({ queryKey: ['suppliers'], queryFn: () => getSuppliers().then(r => r.data) });
   const { data: warehouses = [] } = useQuery({ queryKey: ['warehouses'], queryFn: () => getWarehouses().then(r => r.data) });
   const { data: users = [], error: usersError } = useQuery({ queryKey: ['assignable-users'], queryFn: () => getAssignableUsers().then(r => r.data) });
@@ -81,18 +89,29 @@ export default function AssetsPage() {
     mutationFn: (id: number) => endAssetMaintenance(id),
     onSuccess: () => { refetchAssets(); qc.invalidateQueries({ queryKey: ['asset-maintenance'] }); setModal(null); setAction(null); },
   });
+  const delMut = useMutation({
+    mutationFn: (id: number) => deleteAsset(id),
+    onSuccess: () => { refetchAssets(); setSelected(null); setNotification({ type: 'success', message: 'Demirbaş başarıyla silindi.' }); },
+    onError: (e: unknown) => { setNotification({ type: 'error', message: extractApiError(e, 'Demirbaş silinemedi.') }); },
+  });
 
   const assignableUsers = users.filter(u =>
     u.role !== 'ADMIN' && u.active && u.warehouse?.id === selected?.warehouse?.id
   );
 
-  const openActions = () => {
-    if (!selected) return;
+  const openActionsFor = (asset: Asset) => {
+    setSelected(asset);
     setAction(null);
     setAssignForm({ userId: '', notes: '' });
     setMaintenanceForm({ description: '', notes: '' });
     setApiError('');
     setModal('actions');
+  };
+
+  const handleDelete = (asset: Asset) => {
+    if (!confirm(`"${asset.name}" demirbaşı silinsin mi?`)) return;
+    setNotification(null);
+    delMut.mutate(asset.id);
   };
 
   const assetCols: Column<Asset>[] = [
@@ -102,6 +121,22 @@ export default function AssetsPage() {
     { key: 'assignedToUsername', header: 'ZİMMETLİ',   render: a => a.assignedToUsername ? <span className="text-yellow">{a.assignedToUsername}</span> : <span className="text-muted">—</span> },
     { key: 'supplier',           header: 'TEDARİKÇİ',  render: a => a.supplier?.name ?? '-' },
     { key: 'warehouse',          header: 'DEPO',        render: a => a.warehouse?.name ?? '-' },
+    ...(canManageOperations ? [{
+      key: 'actions' as keyof Asset,
+      header: '',
+      render: (a: Asset) => (
+        <div className="flex gap-1 items-center" onClick={e => e.stopPropagation()}>
+          <button title="İşlemler" aria-label="İşlemler" onClick={() => openActionsFor(a)}
+            className="p-1.5 border border-accent text-accent hover:bg-accent hover:text-bg-primary transition-colors cursor-pointer">
+            <ClipboardList size={14} />
+          </button>
+          <button title="Sil" aria-label="Sil" onClick={() => handleDelete(a)}
+            className="p-1.5 border border-red text-red hover:bg-red hover:text-bg-primary transition-colors cursor-pointer">
+            <Trash2 size={14} />
+          </button>
+        </div>
+      ),
+    }] : []),
   ];
 
   const historyCols: Column<AssetAssignment>[] = [
@@ -184,12 +219,18 @@ export default function AssetsPage() {
     <div>
       <PageHeader title="DEMİRBAŞLAR" search={<SearchInput value={search} onChange={setSearch} />}>
         {canManageOperations && (
-          <>
-            <Button onClick={() => { setForm({ serialNumber: '', name: '', supplierId: '', warehouseId: '' }); setApiError(''); setModal('add'); }}>+ EKLE</Button>
-            <Button variant="secondary" onClick={openActions} disabled={!selected}>İŞLEMLER</Button>
-          </>
+          <Button onClick={() => { setForm({ serialNumber: '', name: '', supplierId: '', warehouseId: '' }); setApiError(''); setModal('add'); }}>+ EKLE</Button>
         )}
       </PageHeader>
+
+      {notification && (
+        <div className={`flex items-center justify-between p-3 mb-4 border font-vt text-lg ${
+          notification.type === 'error' ? 'border-red text-red' : 'border-green text-green'
+        }`}>
+          <span>{notification.message}</span>
+          <button onClick={() => setNotification(null)} className="ml-4 opacity-60 hover:opacity-100 cursor-pointer">✕</button>
+        </div>
+      )}
 
       <div className="flex gap-0 mb-4 border-b border-border">
         {tabs.map(t => (

@@ -34,6 +34,8 @@ export default function InventoryPage() {
   const { data: stockRequests = [] } = useQuery({ queryKey: ['stock-requests'], queryFn: () => getStockRequests().then(r => r.data) });
 
   const sourceWarehouses = isAdmin ? warehouses : warehouses.filter(w => w.id === user?.warehouseId);
+  const selectedSourceWarehouseId = form.warehouseId ? parseInt(form.warehouseId) : user?.warehouseId ?? null;
+  const destinationWarehouses = warehouses.filter(w => w.id !== selectedSourceWarehouseId);
 
   const filteredTxs = useMemo(() => {
     const q = search.toLowerCase();
@@ -62,7 +64,7 @@ export default function InventoryPage() {
   const rejectMut = useMutation({ mutationFn: ({ id, managerNote }: { id: number; managerNote?: string }) => rejectStockRequest(id, { managerNote }), onSuccess: () => { refetchRequests(); setRequestModal(null); } });
 
   const openModal = (type: TxModal) => {
-    setForm({ productId: '', warehouseId: '', toWarehouseId: '', quantity: '', notes: '' });
+    setForm({ productId: '', warehouseId: isAdmin ? '' : String(user?.warehouseId ?? ''), toWarehouseId: '', quantity: '', notes: '' });
     setApiError('');
     setModal(type);
   };
@@ -125,7 +127,11 @@ export default function InventoryPage() {
   };
 
   const f = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    setForm(p => ({ ...p, [k]: e.target.value }));
+    setForm(p => ({
+      ...p,
+      [k]: e.target.value,
+      ...(k === 'warehouseId' && p.toWarehouseId === e.target.value ? { toWarehouseId: '' } : {}),
+    }));
   const rf = (k: keyof typeof requestForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setRequestForm(p => ({ ...p, [k]: e.target.value }));
 
@@ -189,7 +195,7 @@ export default function InventoryPage() {
           footer={<><Button variant="secondary" onClick={() => setModal(null)}>İPTAL</Button><Button onClick={submit}>KAYDET</Button></>}
         >
           <div className="flex flex-col gap-3">
-            {[{ k: 'productId', label: 'ÜRÜN', items: products }, { k: 'warehouseId', label: modal === 'transfer' ? 'KAYNAK DEPO' : 'DEPO', items: modal === 'in' ? warehouses : sourceWarehouses }].map(({ k, label, items }) => (
+            {[{ k: 'productId', label: 'ÜRÜN', items: products }, { k: 'warehouseId', label: modal === 'transfer' ? 'KAYNAK DEPO' : 'DEPO', items: sourceWarehouses }].map(({ k, label, items }) => (
               <div key={k} className="flex flex-col gap-1">
                 <label className="text-muted font-pixel text-xs">{label}</label>
                 <select className="input-field" value={form[k as keyof typeof form]} onChange={f(k as keyof typeof form)}>
@@ -203,7 +209,7 @@ export default function InventoryPage() {
                 <label className="text-muted font-pixel text-xs">HEDEF DEPO</label>
                 <select className="input-field" value={form.toWarehouseId} onChange={f('toWarehouseId')}>
                   <option value="">Seçin...</option>
-                  {warehouses.map((w: {id:number; name:string}) => <option key={w.id} value={w.id}>{w.name}</option>)}
+                  {destinationWarehouses.map((w: {id:number; name:string}) => <option key={w.id} value={w.id}>{w.name}</option>)}
                 </select>
               </div>
             )}

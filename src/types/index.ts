@@ -40,6 +40,15 @@ export interface Product {
   price: number;
   quantityInStock: number;
   category: Category;
+  suppliers?: Supplier[];
+  warehouse?: Warehouse | null;
+  warehouseStocks?: ProductWarehouseStock[];
+}
+
+export interface ProductWarehouseStock {
+  warehouseId: number;
+  warehouseName: string;
+  quantity: number;
 }
 
 export interface Asset {
@@ -76,6 +85,7 @@ export interface InventoryTransaction {
   product: Product;
   warehouse: Warehouse;
   destinationWarehouse: Warehouse | null;
+  user?: User | null;
   type: TxType;
   quantity: number;
   transactionDate: string;

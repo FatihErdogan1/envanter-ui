@@ -125,7 +125,7 @@ export default function ProductsPage() {
     setDetailTab('stock');
   };
 
-  const payload = () => ({
+  const addPayload = () => ({
     name: form.name,
     sku: form.sku,
     price: parseFloat(form.price),
@@ -135,14 +135,24 @@ export default function ProductsPage() {
     warehouse: { id: parseInt(form.warehouseId) },
   });
 
+  const editPayload = () => ({
+    name: form.name,
+    sku: form.sku,
+    price: parseFloat(form.price),
+    quantityInStock: parseInt(form.quantityInStock) || 0,
+    category: { id: parseInt(form.categoryId) },
+  });
+
   const submit = async () => {
     setApiError('');
     if (!form.categoryId) { setApiError('Kategori seçilmelidir.'); return; }
-    if (form.supplierIds.length === 0) { setApiError('En az bir tedarikçi seçilmelidir.'); return; }
-    if (!form.warehouseId) { setApiError('Depo seçilmelidir.'); return; }
+    if (modal === 'add') {
+      if (form.supplierIds.length === 0) { setApiError('En az bir tedarikçi seçilmelidir.'); return; }
+      if (!form.warehouseId) { setApiError('Depo seçilmelidir.'); return; }
+    }
     try {
-      if (modal === 'add') await addMut.mutateAsync(payload());
-      else await editMut.mutateAsync(payload());
+      if (modal === 'add') await addMut.mutateAsync(addPayload());
+      else await editMut.mutateAsync(editPayload());
     } catch (e: unknown) { setApiError((e as { response?: { data?: string } }).response?.data ?? 'Hata oluştu.'); }
   };
 
@@ -233,7 +243,7 @@ export default function ProductsPage() {
             <Input label="ÜRÜN ADI" value={form.name} onChange={f('name')} className="col-span-2" />
             <Input label="SKU" value={form.sku} onChange={f('sku')} />
             <Input label="FİYAT (₺)" type="number" min="0" step="0.01" value={form.price} onChange={f('price')} />
-            <Input label="BAŞLANGIÇ STOK" type="number" min="0" step="1" value={form.quantityInStock} onChange={f('quantityInStock')} />
+            <Input label="STOK MİKTARI" type="number" min="0" step="1" value={form.quantityInStock} onChange={f('quantityInStock')} />
             <div className="flex flex-col gap-1">
               <label className="text-muted font-pixel text-xs">KATEGORİ</label>
               <select className="input-field" value={form.categoryId} onChange={f('categoryId')}>
@@ -241,33 +251,37 @@ export default function ProductsPage() {
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
-            <div className="flex flex-col gap-1 col-span-2">
-              <label className="text-muted font-pixel text-xs">TEDARİKÇİLER</label>
-              <div className="border border-border bg-bg-panel p-2 max-h-28 overflow-y-auto flex flex-col gap-1">
-                {suppliers.map(s => (
-                  <label key={s.id} className="flex items-center gap-2 cursor-pointer font-vt text-lg text-text-primary hover:text-accent">
-                    <input
-                      type="checkbox"
-                      checked={form.supplierIds.includes(String(s.id))}
-                      onChange={e => setForm(p => ({
-                        ...p,
-                        supplierIds: e.target.checked
-                          ? [...p.supplierIds, String(s.id)]
-                          : p.supplierIds.filter(id => id !== String(s.id)),
-                      }))}
-                    />
-                    {s.name}
-                  </label>
-                ))}
+            {modal === 'add' && (
+              <div className="flex flex-col gap-1 col-span-2">
+                <label className="text-muted font-pixel text-xs">TEDARİKÇİLER</label>
+                <div className="border border-border bg-bg-panel p-2 max-h-28 overflow-y-auto flex flex-col gap-1">
+                  {suppliers.map(s => (
+                    <label key={s.id} className="flex items-center gap-2 cursor-pointer font-vt text-lg text-text-primary hover:text-accent">
+                      <input
+                        type="checkbox"
+                        checked={form.supplierIds.includes(String(s.id))}
+                        onChange={e => setForm(p => ({
+                          ...p,
+                          supplierIds: e.target.checked
+                            ? [...p.supplierIds, String(s.id)]
+                            : p.supplierIds.filter(id => id !== String(s.id)),
+                        }))}
+                      />
+                      {s.name}
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
-            <div className="flex flex-col gap-1 col-span-2">
-              <label className="text-muted font-pixel text-xs">DEPO *</label>
-              <select className="input-field" value={form.warehouseId} onChange={f('warehouseId')}>
-                <option value="">Seçin...</option>
-                {selectableWarehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-              </select>
-            </div>
+            )}
+            {modal === 'add' && (
+              <div className="flex flex-col gap-1 col-span-2">
+                <label className="text-muted font-pixel text-xs">DEPO *</label>
+                <select className="input-field" value={form.warehouseId} onChange={f('warehouseId')}>
+                  <option value="">Seçin...</option>
+                  {selectableWarehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                </select>
+              </div>
+            )}
             {apiError && <p className="text-red font-vt col-span-2">{apiError}</p>}
           </div>
         </Modal>

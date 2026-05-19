@@ -163,14 +163,14 @@ export default function AssetsPage() {
         warehouse: { id: parseInt(form.warehouseId) },
         ...(form.supplierId ? { supplier: { id: parseInt(form.supplierId) } } : {}),
       });
-    } catch (e: unknown) { setApiError((e as { response?: { data?: string } }).response?.data ?? 'Hata oluştu.'); }
+    } catch (e: unknown) { setApiError(extractApiError(e, 'Demirbaş eklenemedi.')); }
   };
 
   const submitAssign = async () => {
     setApiError('');
     try {
       await assignMut.mutateAsync({ id: selected!.id, data: { userId: parseInt(assignForm.userId), notes: assignForm.notes } });
-    } catch (e: unknown) { setApiError((e as { response?: { data?: string } }).response?.data ?? 'Hata oluştu.'); }
+    } catch (e: unknown) { setApiError(extractApiError(e, 'Zimmetleme işlemi başarısız.')); }
   };
 
   const submitMaintenance = async () => {
@@ -178,7 +178,7 @@ export default function AssetsPage() {
     setApiError('');
     try {
       await startMaintenanceMut.mutateAsync({ id: selected.id, data: maintenanceForm });
-    } catch (e: unknown) { setApiError((e as { response?: { data?: string } }).response?.data ?? 'Hata oluştu.'); }
+    } catch (e: unknown) { setApiError(extractApiError(e, 'Bakım başlatılamadı.')); }
   };
 
   const handleReturn = async () => {
@@ -186,7 +186,7 @@ export default function AssetsPage() {
     setApiError('');
     try {
       await returnMut.mutateAsync(selected.id);
-    } catch (e: unknown) { setApiError((e as { response?: { data?: string } }).response?.data ?? 'Hata oluştu.'); }
+    } catch (e: unknown) { setApiError(extractApiError(e, 'Zimmet düşürülemedi.')); }
   };
 
   const handleRetire = async () => {
@@ -195,7 +195,7 @@ export default function AssetsPage() {
     setApiError('');
     try {
       await retireMut.mutateAsync(selected.id);
-    } catch (e: unknown) { setApiError((e as { response?: { data?: string } }).response?.data ?? 'Hata oluştu.'); }
+    } catch (e: unknown) { setApiError(extractApiError(e, 'Hurdaya ayırma işlemi başarısız.')); }
   };
 
   const handleEndMaintenance = async () => {
@@ -203,7 +203,7 @@ export default function AssetsPage() {
     setApiError('');
     try {
       await endMaintenanceMut.mutateAsync(selected.id);
-    } catch (e: unknown) { setApiError((e as { response?: { data?: string } }).response?.data ?? 'Hata oluştu.'); }
+    } catch (e: unknown) { setApiError(extractApiError(e, 'Bakım tamamlanamadı.')); }
   };
 
   if (isLoading) return <p className="text-muted font-vt text-xl">Yükleniyor...</p>;

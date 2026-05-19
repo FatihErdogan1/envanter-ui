@@ -165,7 +165,7 @@ export default function DashboardPage() {
   ];
 
   if (isLoading || assetsLoading) return <p className="text-muted font-vt text-2xl">Yükleniyor...</p>;
-  if (error || !displayStats) return <p className="text-red font-vt text-2xl">Veri yüklenemedi.</p>;
+  if (error || !displayStats) return <p className="text-red font-vt text-2xl">Veri yüklenemedi{error ? `: ${(error as Error).message}` : ''}.</p>;
 
   return (
     <div className="flex flex-col gap-6">

@@ -18,8 +18,9 @@ export default function ForgotPasswordPage() {
     try {
       await forgotPassword(email.trim());
       setSent(true);
-    } catch {
-      setError('Bir hata oluştu. Lütfen tekrar deneyin.');
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: string } }).response?.data;
+      setError(typeof msg === 'string' && msg.length > 0 ? msg : 'Bir hata oluştu. Lütfen tekrar deneyin.');
     } finally {
       setLoading(false);
     }

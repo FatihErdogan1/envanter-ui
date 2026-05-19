@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Pencil, Trash2, KeyRound } from 'lucide-react';
 import { getUsers, createUser, updateUser, deleteUser, resetUserPassword, getWarehouses } from '../api';
+import { extractApiError } from '../utils/errorUtils';
 import type { User, Role, Warehouse } from '../types';
 import PageHeader from '../components/ui/PageHeader';
 import Button from '../components/ui/Button';
@@ -39,12 +40,13 @@ export default function UsersPage() {
 
   const refetch = () => qc.invalidateQueries({ queryKey: ['users'] });
 
-  const addMut   = useMutation({ mutationFn: (d: FormData) => createUser(d), onSuccess: () => { refetch(); setModal(null); } });
-  const editMut  = useMutation({ mutationFn: (d: UserUpdatePayload) => updateUser(editingUser!.id, d), onSuccess: () => { refetch(); setModal(null); } });
-  const delMut   = useMutation({ mutationFn: (id: number) => deleteUser(id), onSuccess: refetch });
+  const addMut   = useMutation({ mutationFn: (d: FormData) => createUser(d), onSuccess: () => { refetch(); setModal(null); }, onError: (e: unknown) => setApiError(extractApiError(e, 'Kullanıcı eklenemedi.')) });
+  const editMut  = useMutation({ mutationFn: (d: UserUpdatePayload) => updateUser(editingUser!.id, d), onSuccess: () => { refetch(); setModal(null); }, onError: (e: unknown) => setApiError(extractApiError(e, 'Kullanıcı güncellenemedi.')) });
+  const delMut   = useMutation({ mutationFn: (id: number) => deleteUser(id), onSuccess: refetch, onError: (e: unknown) => setApiError(extractApiError(e, 'Kullanıcı silinemedi.')) });
   const resetMut = useMutation({
     mutationFn: (id: number) => resetUserPassword(id).then(r => r.data.tempPassword),
     onSuccess: (pw) => { setTempPassword(pw); setCopied(false); setModal('reset'); },
+    onError: (e: unknown) => setApiError(extractApiError(e, 'Şifre sıfırlanamadı.')),
   });
 
   const openAdd = () => { setForm(blank); setApiError(''); setModal('add'); };
@@ -70,7 +72,7 @@ export default function UsersPage() {
         warehouseId: form.warehouseId ? parseInt(form.warehouseId) : null,
       });
     } catch (e: unknown) {
-      setApiError((e as { response?: { data?: string } }).response?.data ?? 'Hata oluştu.');
+      setApiError(extractApiError(e, 'Hata oluştu.'));
     }
   };
 

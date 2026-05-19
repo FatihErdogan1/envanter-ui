@@ -12,6 +12,7 @@ import SearchInput from '../components/ui/SearchInput';
 import DataTable, { Column } from '../components/ui/DataTable';
 import Modal from '../components/ui/Modal';
 import { useAuth } from '../context/AuthContext';
+import { extractApiError } from '../utils/errorUtils';
 
 type TxModal = 'in' | 'out' | 'transfer' | null;
 type RequestModal = 'request' | 'review' | null;
@@ -96,7 +97,7 @@ export default function InventoryPage() {
       else if (modal === 'out') await outMut.mutateAsync(payload);
       else if (modal === 'transfer') await trMut.mutateAsync(payload);
     } catch (e: unknown) {
-      setApiError((e as {response?:{data?:string}}).response?.data ?? 'Hata oluştu.');
+      setApiError(extractApiError(e, 'İşlem gerçekleştirilemedi.'));
     }
   };
 
@@ -110,7 +111,7 @@ export default function InventoryPage() {
         notes: requestForm.notes,
       });
     } catch (e: unknown) {
-      setApiError((e as {response?:{data?:string}}).response?.data ?? 'Hata oluştu.');
+      setApiError(extractApiError(e, 'Talep oluşturulamadı.'));
     }
   };
 
@@ -122,7 +123,7 @@ export default function InventoryPage() {
       if (status === 'approve') await approveMut.mutateAsync(payload);
       else await rejectMut.mutateAsync(payload);
     } catch (e: unknown) {
-      setApiError((e as {response?:{data?:string}}).response?.data ?? 'Hata oluştu.');
+      setApiError(extractApiError(e, 'İşlem gerçekleştirilemedi.'));
     }
   };
 

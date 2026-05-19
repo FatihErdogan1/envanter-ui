@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Pencil, Trash2, KeyRound } from 'lucide-react';
 import { getUsers, createUser, updateUser, deleteUser, resetUserPassword, getWarehouses } from '../api';
 import type { User, Role, Warehouse } from '../types';
 import PageHeader from '../components/ui/PageHeader';
@@ -15,7 +16,7 @@ const blank: FormData = { username: '', email: '', password: '', role: 'STAFF', 
 
 export default function UsersPage() {
   const qc = useQueryClient();
-  const [selected, setSelected] = useState<User | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [modal, setModal] = useState<'add' | 'edit' | 'reset' | null>(null);
   const [form, setForm] = useState<FormData>(blank);
   const [tempPassword, setTempPassword] = useState('');
@@ -38,26 +39,26 @@ export default function UsersPage() {
 
   const refetch = () => qc.invalidateQueries({ queryKey: ['users'] });
 
-  const addMut = useMutation({ mutationFn: (d: FormData) => createUser(d), onSuccess: () => { refetch(); setModal(null); } });
-  const editMut = useMutation({ mutationFn: (d: UserUpdatePayload) => updateUser(selected!.id, d), onSuccess: () => { refetch(); setModal(null); } });
-  const delMut = useMutation({ mutationFn: (id: number) => deleteUser(id), onSuccess: refetch });
+  const addMut   = useMutation({ mutationFn: (d: FormData) => createUser(d), onSuccess: () => { refetch(); setModal(null); } });
+  const editMut  = useMutation({ mutationFn: (d: UserUpdatePayload) => updateUser(editingUser!.id, d), onSuccess: () => { refetch(); setModal(null); } });
+  const delMut   = useMutation({ mutationFn: (id: number) => deleteUser(id), onSuccess: refetch });
   const resetMut = useMutation({
     mutationFn: (id: number) => resetUserPassword(id).then(r => r.data.tempPassword),
     onSuccess: (pw) => { setTempPassword(pw); setCopied(false); setModal('reset'); },
   });
 
   const openAdd = () => { setForm(blank); setApiError(''); setModal('add'); };
-  const openEdit = () => {
-    if (!selected) return;
-    setForm({ username: selected.username, email: selected.email, password: '', role: selected.role, active: selected.active, warehouseId: selected.warehouse?.id?.toString() ?? '' });
+
+  const openEdit = (u: User) => {
+    setEditingUser(u);
+    setForm({ username: u.username, email: u.email, password: '', role: u.role, active: u.active, warehouseId: u.warehouse?.id?.toString() ?? '' });
     setApiError('');
     setModal('edit');
   };
-  const handleDelete = () => {
-    if (!selected) return;
-    if (!confirm(`"${selected.username}" silinsin mi?`)) return;
-    delMut.mutate(selected.id);
-    setSelected(null);
+
+  const handleDelete = (u: User) => {
+    if (!confirm(`"${u.username}" silinsin mi?`)) return;
+    delMut.mutate(u.id);
   };
 
   const submit = async () => {
@@ -73,12 +74,43 @@ export default function UsersPage() {
     }
   };
 
+  const iconBtnBase = 'p-1.5 border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed';
+
   const columns: Column<User>[] = [
     { key: 'username',  header: 'KULLANICI ADI' },
     { key: 'email',     header: 'E-POSTA' },
     { key: 'role',      header: 'ROL' },
     { key: 'warehouse', header: 'DEPO', render: (u) => u.warehouse?.name ?? <span className="text-muted">—</span> },
     { key: 'active',    header: 'DURUM', render: (u) => <span className={u.active ? 'text-green' : 'text-red'}>{u.active ? 'AKTİF' : 'PASİF'}</span> },
+    {
+      key: 'actions',
+      header: '',
+      render: (u) => (
+        <div className="flex gap-1 items-center" onClick={e => e.stopPropagation()}>
+          <button
+            title="Düzenle" aria-label="Düzenle"
+            onClick={() => openEdit(u)}
+            className={`${iconBtnBase} border-accent text-accent hover:bg-accent hover:text-bg-primary`}
+          >
+            <Pencil size={14} />
+          </button>
+          <button
+            title="Şifre Sıfırla" aria-label="Şifre Sıfırla"
+            onClick={() => resetMut.mutate(u.id)}
+            className={`${iconBtnBase} border-yellow text-yellow hover:bg-yellow hover:text-bg-primary`}
+          >
+            <KeyRound size={14} />
+          </button>
+          <button
+            title="Sil" aria-label="Sil"
+            onClick={() => handleDelete(u)}
+            className={`${iconBtnBase} border-red text-red hover:bg-red hover:text-bg-primary`}
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      ),
+    },
   ];
 
   if (isLoading) return <p className="text-muted font-vt text-xl">Yükleniyor...</p>;
@@ -87,12 +119,9 @@ export default function UsersPage() {
     <div>
       <PageHeader title="KULLANICILAR" search={<SearchInput value={search} onChange={setSearch} />}>
         <Button onClick={openAdd}>+ EKLE</Button>
-        <Button variant="secondary" onClick={openEdit} disabled={!selected || selected.role === 'ADMIN'}>DÜZENLE</Button>
-        <Button variant="secondary" onClick={() => selected && resetMut.mutate(selected.id)} disabled={!selected || selected.role === 'ADMIN'}>ŞİFRE SIFIRLA</Button>
-        <Button variant="danger" onClick={handleDelete} disabled={!selected || selected.role === 'ADMIN'}>SİL</Button>
       </PageHeader>
 
-      <DataTable columns={columns} data={displayed} rowKey={u => u.id} onRowClick={setSelected} selectedId={selected?.id} />
+      <DataTable columns={columns} data={displayed} rowKey={u => u.id} />
 
       {(modal === 'add' || modal === 'edit') && (
         <Modal title={modal === 'add' ? 'KULLANICI EKLE' : 'KULLANICI DÜZENLE'} onClose={() => setModal(null)}

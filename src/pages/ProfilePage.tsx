@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { changePassword } from '../api';
 import PageHeader from '../components/ui/PageHeader';
 import Input from '../components/ui/Input';

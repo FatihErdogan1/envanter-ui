@@ -8,7 +8,7 @@ import Input from '../components/ui/Input';
 import SearchInput from '../components/ui/SearchInput';
 import DataTable, { Column } from '../components/ui/DataTable';
 import Modal from '../components/ui/Modal';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { extractApiError } from '../utils/errorUtils';
 import { Pencil, Trash2 } from 'lucide-react';
 
@@ -26,7 +26,7 @@ export default function SuppliersPage() {
   const [search, setSearch] = useState('');
   const [notification, setNotification] = useState<Notification | null>(null);
 
-  const { data: suppliers = [], isLoading } = useQuery({
+  const { data: suppliers = [], isLoading, error } = useQuery({
     queryKey: ['suppliers'],
     queryFn: () => getSuppliers().then(r => r.data),
   });
@@ -112,6 +112,7 @@ export default function SuppliersPage() {
   ];
 
   if (isLoading) return <p className="text-muted font-vt text-xl">Yükleniyor...</p>;
+  if (error) return <p className="text-red font-vt text-xl text-center p-8">Veriler yüklenirken bir hata oluştu. Lütfen sayfayı yenileyin.</p>;
 
   return (
     <div>

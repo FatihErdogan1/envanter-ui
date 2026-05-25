@@ -1,12 +1,13 @@
 import client from './client';
 import type {
   User, Supplier, Warehouse, Category, Product, ProductWarehouseStock,
-  Asset, AssetAssignment, AssetMaintenance, InventoryTransaction, DashboardStats, StockRequest, WarehouseStockItem
+  Asset, AssetAssignment, AssetMaintenance, InventoryTransaction, DashboardStats, StockRequest, WarehouseStockItem,
+  SupplierOrder, PageResponse, Notification
 } from '../types';
 
 // Auth
 export const login = (username: string, password: string) =>
-  client.post<{ token: string; role: string; username: string; forcePasswordChange: boolean; warehouseId: number | null; warehouseName: string | null }>('/auth/login', { username, password });
+  client.post<{ token: string; role: string; username: string; forcePasswordChange: boolean; warehouseId: number | null; warehouseName: string | null; supplierId: number | null; supplierName: string | null }>('/auth/login', { username, password });
 
 export const forgotPassword = (email: string) =>
   client.post<string>('/auth/forgot-password', { email });
@@ -24,8 +25,8 @@ export const getDashboardStats = () =>
 // Users
 export const getUsers = () => client.get<User[]>('/users');
 export const getAssignableUsers = () => client.get<User[]>('/users/assignable');
-export const createUser = (data: Partial<User> & { password: string }) => client.post<User>('/users', data);
-export const updateUser = (id: number, data: Partial<User>) => client.put<User>(`/users/${id}`, data);
+export const createUser = (data: Partial<User> & { password: string; supplierId?: string | null }) => client.post<User>('/users', data);
+export const updateUser = (id: number, data: Partial<User> & { warehouseId?: number | null; supplierId?: number | null }) => client.put<User>(`/users/${id}`, data);
 export const deleteUser = (id: number) => client.delete(`/users/${id}`);
 export const resetUserPassword = (id: number) =>
   client.post<{ tempPassword: string }>(`/users/${id}/reset-password`);
@@ -50,7 +51,8 @@ export const updateCategory = (id: number, data: Partial<Category>) => client.pu
 export const deleteCategory = (id: number) => client.delete(`/categories/${id}`);
 
 // Products
-export const getProducts = () => client.get<Product[]>('/products');
+export const getProducts = (page = 0, size = 20) =>
+  client.get<PageResponse<Product>>(`/products?page=${page}&size=${size}`);
 export const createProduct = (data: object) => client.post<Product>('/products', data);
 export const updateProduct = (id: number, data: object) => client.put<Product>(`/products/${id}`, data);
 export const deleteProduct = (id: number) => client.delete(`/products/${id}`);
@@ -79,7 +81,8 @@ export const getAssetMaintenance = (assetId: number) =>
   client.get<AssetMaintenance[]>(`/assets/${assetId}/maintenance`);
 
 // Inventory
-export const getTransactions = () => client.get<InventoryTransaction[]>('/inventory/transactions');
+export const getTransactions = (page = 0, size = 20) =>
+  client.get<PageResponse<InventoryTransaction>>(`/inventory/transactions?page=${page}&size=${size}`);
 export const stockIn = (data: object) => client.post('/inventory/in', data);
 export const stockOut = (data: object) => client.post('/inventory/out', data);
 export const transfer = (data: object) => client.post('/inventory/transfer', data);
@@ -91,3 +94,24 @@ export const approveStockRequest = (id: number, data: { managerNote?: string }) 
   client.post<StockRequest>(`/stock-requests/${id}/approve`, data);
 export const rejectStockRequest = (id: number, data: { managerNote?: string }) =>
   client.post<StockRequest>(`/stock-requests/${id}/reject`, data);
+
+// Supplier Orders
+export const getSupplierOrders = () => client.get<SupplierOrder[]>('/supplier-orders');
+export const createSupplierOrder = (data: { productId: number; supplierId: number; warehouseId: number; quantity: number }) =>
+  client.post<SupplierOrder>('/supplier-orders', data);
+export const approveSupplierOrder = (id: number) => client.patch<SupplierOrder>(`/supplier-orders/${id}/approve`);
+export const rejectSupplierOrder  = (id: number) => client.patch<SupplierOrder>(`/supplier-orders/${id}/reject`);
+export const shipSupplierOrder    = (id: number) => client.patch<SupplierOrder>(`/supplier-orders/${id}/ship`);
+export const deliverSupplierOrder = (id: number) => client.patch<SupplierOrder>(`/supplier-orders/${id}/deliver`);
+
+// Notifications
+export const getNotifications = () => client.get<Notification[]>('/notifications');
+export const getUnreadCount = () => client.get<{ count: number }>('/notifications/unread-count');
+export const markAllNotificationsRead = () => client.put('/notifications/read-all');
+export const markNotificationRead = (id: number) => client.put(`/notifications/${id}/read`);
+
+// Supplier Portal
+export const getMyProducts     = () => client.get<Product[]>('/supplier-orders/my-products');
+export const updateMyProductPrice = (productId: number, price: number) =>
+  client.patch<Product>(`/supplier-orders/my-products/${productId}/price`, { price });
+export const getMyTransactions = () => client.get<InventoryTransaction[]>('/supplier-orders/my-transactions');

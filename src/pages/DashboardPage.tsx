@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { getAssets, getDashboardStats, getWarehouseStock } from '../api';
 import PageHeader from '../components/ui/PageHeader';
 import DataTable, { Column } from '../components/ui/DataTable';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import type { DashboardStats, WarehouseStockItem } from '../types';
 
 const roleLabel: Record<string, string> = {

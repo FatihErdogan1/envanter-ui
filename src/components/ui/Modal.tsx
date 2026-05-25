@@ -5,9 +5,11 @@ interface Props {
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
+  isOpen?: boolean;
 }
 
-export default function Modal({ title, onClose, children, footer }: Props) {
+export default function Modal({ title, onClose, children, footer, isOpen }: Props) {
+  if (isOpen === false) return null;
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"

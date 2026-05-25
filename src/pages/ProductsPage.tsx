@@ -7,14 +7,14 @@ import {
   getCategories, getSuppliers, getWarehouses,
   getProductStockSummary, getProductSuppliers, getProductTransactionHistory,
 } from '../api';
-import type { Product, InventoryTransaction } from '../types';
+import type { Product, PageResponse } from '../types';
 import PageHeader from '../components/ui/PageHeader';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import SearchInput from '../components/ui/SearchInput';
 import DataTable, { Column } from '../components/ui/DataTable';
 import Modal from '../components/ui/Modal';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { extractApiError } from '../utils/errorUtils';
 
 const CRITICAL_THRESHOLD = 10;
@@ -41,9 +41,16 @@ export default function ProductsPage() {
   const [detailProduct, setDetailProduct] = useState<Product | null>(null);
   const [detailTab, setDetailTab] = useState<DetailTab>('stock');
 
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 20;
   const lowStockOnly = searchParams.get('lowStock') === 'true';
 
-  const { data: products = [], isLoading } = useQuery({ queryKey: ['products'], queryFn: () => getProducts().then(r => r.data) });
+  const emptyPage: PageResponse<Product> = { content: [], totalElements: 0, totalPages: 0, currentPage: 0, size: PAGE_SIZE };
+  const { data: productsPage = emptyPage, isLoading } = useQuery({
+    queryKey: ['products', page, PAGE_SIZE],
+    queryFn: () => getProducts(page, PAGE_SIZE).then(r => r.data),
+  });
+  const products = productsPage.content;
   const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: () => getCategories().then(r => r.data) });
   const { data: suppliers = [] } = useQuery({ queryKey: ['suppliers'], queryFn: () => getSuppliers().then(r => r.data) });
   const { data: warehouses = [] } = useQuery({ queryKey: ['warehouses'], queryFn: () => getWarehouses().then(r => r.data) });
@@ -80,7 +87,7 @@ export default function ProductsPage() {
     return list;
   }, [products, search, lowStockOnly]);
 
-  const refetch = () => qc.invalidateQueries({ queryKey: ['products'] });
+  const refetch = () => { qc.invalidateQueries({ queryKey: ['products'] }); setPage(0); };
   const addMut  = useMutation({ mutationFn: (d: object) => createProduct(d), onSuccess: () => { refetch(); setModal(null); } });
   const editMut = useMutation({ mutationFn: (d: object) => updateProduct(editingId!, d), onSuccess: () => { refetch(); setModal(null); } });
   const delMut  = useMutation({
@@ -234,6 +241,18 @@ export default function ProductsPage() {
       )}
 
       <DataTable columns={columns} data={filtered} rowKey={p => p.id} />
+
+      {productsPage.totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <span className="text-muted font-vt text-lg">
+            {productsPage.totalElements} ürün • Sayfa {productsPage.currentPage + 1} / {productsPage.totalPages}
+          </span>
+          <div className="flex gap-2">
+            <Button variant="secondary" disabled={page === 0} onClick={() => setPage(p => p - 1)}>← ÖNCEKİ</Button>
+            <Button variant="secondary" disabled={page >= productsPage.totalPages - 1} onClick={() => setPage(p => p + 1)}>SONRAKİ →</Button>
+          </div>
+        </div>
+      )}
 
       {/* Add / Edit Modal */}
       {modal && (

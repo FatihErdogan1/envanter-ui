@@ -1,4 +1,13 @@
-export type Role = 'ADMIN' | 'MANAGER' | 'STAFF';
+export type Role = 'ADMIN' | 'MANAGER' | 'STAFF' | 'SUPPLIER';
+
+export interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  currentPage: number;
+  size: number;
+}
+export type SupplierOrderStatus = 'BEKLIYOR' | 'ONAYLANDI' | 'REDDEDILDI' | 'YOLDA' | 'TESLIM_ALINDI';
 export type AssetStatus = 'AVAILABLE' | 'IN_USE' | 'MAINTENANCE' | 'RETIRED';
 export type TxType = 'IN' | 'OUT' | 'TRANSFER';
 export type StockRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -11,6 +20,7 @@ export interface User {
   active: boolean;
   forcePasswordChange: boolean;
   warehouse?: { id: number; name: string; locationAddress: string } | null;
+  supplier?: { id: number; name: string } | null;
 }
 
 export interface Supplier {
@@ -106,11 +116,36 @@ export interface StockRequest {
   managerNote?: string | null;
 }
 
+export interface SupplierOrder {
+  id: number;
+  product: Product;
+  supplier: Supplier;
+  warehouse: Warehouse;
+  createdBy?: User | null;
+  quantity: number;
+  status: SupplierOrderStatus;
+  orderDate: string;
+  updatedDate: string | null;
+}
+
 export interface WarehouseStockItem {
   productId: number;
   productName: string;
   sku: string;
   quantity: number;
+}
+
+export type NotificationType = 'STOCK_REQUEST' | 'ORDER' | 'LOW_STOCK';
+
+export interface Notification {
+  id: number;
+  userId: number;
+  title: string;
+  message: string;
+  type: NotificationType;
+  referenceId: number | null;
+  read: boolean;
+  createdAt: string;
 }
 
 export interface DashboardStats {

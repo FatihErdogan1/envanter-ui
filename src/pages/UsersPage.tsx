@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Pencil, Trash2, KeyRound } from 'lucide-react';
-import { getUsers, createUser, updateUser, deleteUser, resetUserPassword, getWarehouses } from '../api';
+import { getUsers, createUser, updateUser, deleteUser, resetUserPassword, getWarehouses, getSuppliers } from '../api';
 import { extractApiError } from '../utils/errorUtils';
-import type { User, Role, Warehouse } from '../types';
+import type { User, Role, Warehouse, Supplier } from '../types';
 import PageHeader from '../components/ui/PageHeader';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -11,9 +11,9 @@ import SearchInput from '../components/ui/SearchInput';
 import DataTable, { Column } from '../components/ui/DataTable';
 import Modal from '../components/ui/Modal';
 
-type FormData = { username: string; email: string; password: string; role: Role; active: boolean; warehouseId: string };
-type UserUpdatePayload = Partial<User> & { warehouseId?: number | null };
-const blank: FormData = { username: '', email: '', password: '', role: 'STAFF', active: true, warehouseId: '' };
+type FormData = { username: string; email: string; password: string; role: Role; active: boolean; warehouseId: string; supplierId: string };
+type UserUpdatePayload = Partial<User> & { warehouseId?: number | null; supplierId?: number | null };
+const blank: FormData = { username: '', email: '', password: '', role: 'STAFF', active: true, warehouseId: '', supplierId: '' };
 
 export default function UsersPage() {
   const qc = useQueryClient();
@@ -37,6 +37,7 @@ export default function UsersPage() {
     ) : filteredUsers;
   }, [filteredUsers, search]);
   const { data: warehouses = [] } = useQuery<Warehouse[]>({ queryKey: ['warehouses'], queryFn: () => getWarehouses().then(r => r.data) });
+  const { data: suppliers = [] } = useQuery<Supplier[]>({ queryKey: ['suppliers'], queryFn: () => getSuppliers().then(r => r.data) });
 
   const refetch = () => qc.invalidateQueries({ queryKey: ['users'] });
 
@@ -53,7 +54,7 @@ export default function UsersPage() {
 
   const openEdit = (u: User) => {
     setEditingUser(u);
-    setForm({ username: u.username, email: u.email, password: '', role: u.role, active: u.active, warehouseId: u.warehouse?.id?.toString() ?? '' });
+    setForm({ username: u.username, email: u.email, password: '', role: u.role, active: u.active, warehouseId: u.warehouse?.id?.toString() ?? '', supplierId: u.supplier?.id?.toString() ?? '' });
     setApiError('');
     setModal('edit');
   };
@@ -70,6 +71,7 @@ export default function UsersPage() {
       else if (modal === 'edit') await editMut.mutateAsync({
         username: form.username, email: form.email, role: form.role, active: form.active,
         warehouseId: form.warehouseId ? parseInt(form.warehouseId) : null,
+        supplierId: form.supplierId ? parseInt(form.supplierId) : null,
       });
     } catch (e: unknown) {
       setApiError(extractApiError(e, 'Hata oluştu.'));
@@ -82,7 +84,7 @@ export default function UsersPage() {
     { key: 'username',  header: 'KULLANICI ADI' },
     { key: 'email',     header: 'E-POSTA' },
     { key: 'role',      header: 'ROL' },
-    { key: 'warehouse', header: 'DEPO', render: (u) => u.warehouse?.name ?? <span className="text-muted">—</span> },
+    { key: 'warehouse', header: 'DEPO / TEDARİKÇİ', render: (u) => u.role === 'SUPPLIER' ? (u.supplier?.name ?? <span className="text-muted">—</span>) : (u.warehouse?.name ?? <span className="text-muted">—</span>) },
     { key: 'active',    header: 'DURUM', render: (u) => <span className={u.active ? 'text-green' : 'text-red'}>{u.active ? 'AKTİF' : 'PASİF'}</span> },
     {
       key: 'actions',
@@ -134,18 +136,29 @@ export default function UsersPage() {
             {modal === 'add' && <Input label="ŞİFRE" type="password" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} />}
             <div className="flex flex-col gap-1">
               <label className="text-muted font-pixel text-xs">ROL</label>
-              <select className="input-field" value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value as Role }))}>
+              <select className="input-field" value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value as Role, supplierId: '', warehouseId: '' }))}>
                 <option value="STAFF">STAFF</option>
                 <option value="MANAGER">MANAGER</option>
+                <option value="SUPPLIER">TEDARİKÇİ</option>
               </select>
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-muted font-pixel text-xs">DEPO</label>
-              <select className="input-field" value={form.warehouseId} onChange={e => setForm(p => ({ ...p, warehouseId: e.target.value }))}>
-                <option value="" disabled>— Depo seçiniz —</option>
-                {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-              </select>
-            </div>
+            {form.role === 'SUPPLIER' ? (
+              <div className="flex flex-col gap-1">
+                <label className="text-muted font-pixel text-xs">TEDARİKÇİ</label>
+                <select className="input-field" value={form.supplierId} onChange={e => setForm(p => ({ ...p, supplierId: e.target.value }))}>
+                  <option value="">— Tedarikçi seçiniz —</option>
+                  {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1">
+                <label className="text-muted font-pixel text-xs">DEPO</label>
+                <select className="input-field" value={form.warehouseId} onChange={e => setForm(p => ({ ...p, warehouseId: e.target.value }))}>
+                  <option value="">— Depo seçiniz —</option>
+                  {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                </select>
+              </div>
+            )}
             {modal === 'edit' && (
               <label className="flex items-center gap-2 font-vt text-lg cursor-pointer">
                 <input type="checkbox" checked={form.active} onChange={e => setForm(p => ({ ...p, active: e.target.checked }))} />

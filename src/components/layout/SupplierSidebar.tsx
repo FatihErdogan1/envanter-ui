@@ -5,26 +5,15 @@ import NotificationBell from '../ui/NotificationBell';
 import logo from '../../resources/logo.png';
 
 const navItems = [
-  { to: '/',           label: 'DASHBOARD',        staffHidden: true },
-  { to: '/products',   label: 'ÜRÜNLER' },
-  { to: '/assets',     label: 'DEMİRBAŞLAR' },
-  { to: '/inventory',  label: 'STOK HAREKETLERİ' },
-  { to: '/warehouses', label: 'DEPOLAR',           staffHidden: true },
-  { to: '/categories', label: 'KATEGORİLER',       staffHidden: true },
-  { to: '/suppliers',  label: 'TEDARİKÇİLER',      staffHidden: true },
-  { to: '/orders',     label: 'SİPARİŞLER',        staffHidden: true },
-  { to: '/users',      label: 'KULLANICILAR',      adminOnly: true },
-  { to: '/profile',    label: 'PROFİLİM' },
+  { to: '/supplier/urunlerim',    label: 'ÜRÜNLERİM' },
+  { to: '/supplier/siparisler',   label: 'SİPARİŞLER' },
+  { to: '/supplier/islem-gecmisi', label: 'İŞLEM GEÇMİŞİ' },
 ];
 
-export default function Sidebar() {
-  const { user, logout, isAdmin, isStaff } = useAuth();
+export default function SupplierSidebar() {
+  const { user, logout } = useAuth();
   const qc = useQueryClient();
   const handleLogout = () => { qc.clear(); logout(); };
-
-  const visible = navItems.filter((item) =>
-    (!item.adminOnly || isAdmin) && (!item.staffHidden || !isStaff)
-  );
 
   return (
     <aside className="w-56 flex-shrink-0 bg-bg-surface border-r border-border flex flex-col">
@@ -34,11 +23,10 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 py-4 overflow-y-auto">
-        {visible.map((item) => (
+        {navItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
-            end={item.to === '/'}
             className={({ isActive }) =>
               `block px-4 py-2.5 font-pixel text-xs transition-colors duration-100 border-l-2 ${
                 isActive
@@ -54,7 +42,8 @@ export default function Sidebar() {
 
       <div className="border-t border-border px-4 py-3">
         <div className="font-pixel text-xs text-muted mb-1">{user?.username}</div>
-        <div className="font-vt text-sm text-accent2 mb-3">{user?.role}</div>
+        <div className="font-vt text-sm text-accent2 mb-1">{user?.supplierName ?? 'TEDARİKÇİ'}</div>
+        <div className="font-pixel text-xs text-muted mb-3">TEDARİKÇİ</div>
         <button
           onClick={handleLogout}
           className="font-pixel text-xs text-red hover:text-text-primary transition-colors"

@@ -1,6 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { login as loginApi } from '../api';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
@@ -20,8 +20,9 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const { data } = await loginApi(username, password);
-      login(data.token, data.username, data.role, data.forcePasswordChange, data.warehouseId, data.warehouseName);
-      navigate(data.forcePasswordChange ? '/change-password' : '/', { replace: true });
+      login(data.token, data.username, data.role, data.forcePasswordChange, data.warehouseId, data.warehouseName, data.supplierId, data.supplierName);
+      const redirectTo = data.forcePasswordChange ? '/change-password' : data.role === 'SUPPLIER' ? '/supplier/urunlerim' : '/';
+      navigate(redirectTo, { replace: true });
     } catch {
       setError('Kullanıcı adı veya şifre hatalı.');
     } finally {

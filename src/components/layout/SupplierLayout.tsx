@@ -1,15 +1,15 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import Sidebar from './Sidebar';
+import SupplierSidebar from './SupplierSidebar';
 
-export default function AppLayout() {
+export default function SupplierLayout() {
   const { user, isSupplier } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  if (isSupplier) return <Navigate to="/supplier/urunlerim" replace />;
+  if (!isSupplier) return <Navigate to="/" replace />;
 
   return (
     <div className="flex h-full">
-      <Sidebar />
+      <SupplierSidebar />
       <main className="flex-1 overflow-y-auto p-6">
         <Outlet />
       </main>

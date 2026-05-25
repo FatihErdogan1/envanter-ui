@@ -5,8 +5,12 @@ function isDeletionError(data: unknown): data is DeletionErrorBody {
 }
 
 export function extractApiError(e: unknown, fallback: string): string {
-  const data = (e as { response?: { data?: unknown } }).response?.data;
+  const err = e as { userMessage?: string; response?: { data?: unknown } };
+  if (err.userMessage) return err.userMessage;
+  const data = err.response?.data;
   if (isDeletionError(data)) return data.reason;
+  if (typeof data === 'object' && data !== null && 'message' in data)
+    return String((data as { message: string }).message);
   if (typeof data === 'string' && data.length > 0) return data;
   return fallback;
 }

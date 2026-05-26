@@ -56,7 +56,6 @@ export default function ProductsPage() {
   const { data: warehouses = [] } = useQuery({ queryKey: ['warehouses'], queryFn: () => getWarehouses().then(r => r.data) });
   const selectableWarehouses = isAdmin ? warehouses : warehouses.filter(w => w.id === user?.warehouseId);
 
-  // Detail modal queries
   const { data: detailStock = [], isLoading: stockLoading } = useQuery({
     queryKey: ['product-stock', detailProduct?.id],
     queryFn: () => getProductStockSummary(detailProduct!.id).then(r => r.data),

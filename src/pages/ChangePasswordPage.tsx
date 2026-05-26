@@ -25,7 +25,6 @@ export default function ChangePasswordPage() {
     setLoading(true);
     try {
       await changePassword(newPassword);
-      // forcePasswordChange artık false, user state'ini güncelle
       if (user) login(user.token, user.username, user.role, false, user.warehouseId, user.warehouseName);
       navigate('/', { replace: true });
     } catch (e: unknown) {

@@ -17,7 +17,7 @@ import Modal from '../components/ui/Modal';
 import { useAuth } from '../hooks/useAuth';
 import { extractApiError } from '../utils/errorUtils';
 
-const CRITICAL_THRESHOLD = 10;
+const CRITICAL_THRESHOLD = 5;
 
 type FormData = {
   name: string; sku: string; price: string; quantityInStock: string;
@@ -76,7 +76,7 @@ export default function ProductsPage() {
   });
 
   const filtered = useMemo(() => {
-    let list = lowStockOnly ? products.filter(p => p.quantityInStock < CRITICAL_THRESHOLD) : products;
+    let list = lowStockOnly ? products.filter(p => p.quantityInStock <= CRITICAL_THRESHOLD) : products;
     const q = search.toLowerCase();
     if (q) list = list.filter(p =>
       p.name.toLowerCase().includes(q) ||
@@ -169,7 +169,7 @@ export default function ProductsPage() {
     { key: 'name',            header: 'ÜRÜN ADI' },
     { key: 'sku',             header: 'SKU' },
     { key: 'price',           header: 'FİYAT',   render: p => `₺${Number(p.price).toFixed(2)}` },
-    { key: 'quantityInStock', header: 'STOK',    render: p => <span className={p.quantityInStock < CRITICAL_THRESHOLD ? 'text-red' : ''}>{p.quantityInStock}</span> },
+    { key: 'quantityInStock', header: 'STOK',    render: p => <span className={p.quantityInStock <= CRITICAL_THRESHOLD ? 'text-red' : ''}>{p.quantityInStock}</span> },
     { key: 'category',        header: 'KATEGORİ', render: p => p.category?.name ?? '-' },
     {
       key: 'actions',

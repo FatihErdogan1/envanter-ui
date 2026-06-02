@@ -9,6 +9,8 @@ import DataTable, { Column } from '../../components/ui/DataTable';
 import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
 
+const CRITICAL_THRESHOLD = 5;
+
 type DetailTab = 'stock' | 'suppliers' | 'history';
 
 export default function SupplierProductsPage() {
@@ -75,7 +77,7 @@ export default function SupplierProductsPage() {
       key: 'quantityInStock',
       header: 'STOK',
       render: (p) => (
-        <span className={p.quantityInStock < 10 ? 'text-red' : ''}>
+        <span className={p.quantityInStock <= CRITICAL_THRESHOLD ? 'text-red' : ''}>
           {p.quantityInStock}
         </span>
       ),

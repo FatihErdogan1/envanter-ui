@@ -1,209 +1,62 @@
-# envanter-ui
+# envanter-ui — Inventory Management Web Frontend
 
-> React + TypeScript + Vite ile geliştirilmiş, retro terminal estetiğine sahip tam özellikli envanter yönetim sistemi arayüzü.
+A React + TypeScript single-page application with a retro pixel/terminal look for managing inventory, fixed assets, supplier orders and users.
+It is the frontend of the *envanter* web app and talks to the Spring Boot backend [envanter-api](https://github.com/FatihErdogan1/envanter-api) using JWT bearer tokens.
 
-![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?style=flat-square&logo=typescript)
-![Vite](https://img.shields.io/badge/Vite-5-646CFF?style=flat-square&logo=vite)
-![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3-06B6D4?style=flat-square&logo=tailwindcss)
-![License](https://img.shields.io/badge/license-private-lightgrey?style=flat-square)
+> Türkçe açıklama: [README.tr.md](README.tr.md)
 
----
+## Features
 
-## Özellikler
+- **Authentication** — login, registration, forgot password and a forced change-password flow; the token is kept in `localStorage` and the user is logged out automatically on `401` (Axios interceptors)
+- **Two portals** — the main app for `ADMIN` / `MANAGER` / `STAFF`, and a separate `/supplier` portal for `SUPPLIER` users (own products, price updates, orders, transaction history)
+- **Role-based routing** — route guards hide management pages from staff and user management from everyone except admins
+- **Products** — searchable, paginated list with a low-stock filter and a detail modal with stock, supplier and history tabs
+- **Fixed assets** — assignment, return, maintenance and retirement, with history
+- **Stock movements** — `IN` / `OUT` / warehouse `TRANSFER` and per-warehouse stock views
+- **Supplier orders & stock requests** — order status flow and request approval/rejection screens
+- **Notifications** — bell with unread counter, refreshed by polling the API every 30 seconds
+- **Management screens** — warehouses, categories, suppliers and users
+- **Dashboard** — role-filtered statistics with interactive cards and critical-stock overview
 
-- **Kimlik Doğrulama** — JWT tabanlı giriş, şifre sıfırlama maili, zorunlu şifre değiştirme akışı
-- **İki Ayrı Portal** — Admin/Manager/Staff için ana portal; tedarikçiler için ayrı `/supplier` portalı
-- **Ürün & Stok Yönetimi** — Ürün ekleme/düzenleme, sayfalı listeleme, SKU takibi, depo bazlı stok özeti
-- **Demirbaş Takibi** — Zimmet, iade, bakım ve hurdaya ayırma; atama ve bakım geçmişi
-- **Stok Hareketleri** — Giriş / Çıkış / Depo transfer işlemleri, sayfalı işlem geçmişi
-- **Sipariş Yönetimi** — Tedarikçi bazlı sipariş oluşturma, durum filtresi; BEKLIYOR → ONAYLANDI → YOLDA → TESLİM ALINDI akışı
-- **Stok Talep Sistemi** — STAFF stok talebi oluşturabilir, MANAGER/ADMIN talepleri onaylayabilir veya reddedebilir
-- **Tedarikçi Portalı** — Tedarikçi kullanıcılar kendi ürünlerini listeler, fiyat günceller, siparişlerini yönetir ve işlem geçmişini görür
-- **Bildirim Sistemi** — Gerçek zamanlı okunmamış bildirim sayacı, bildirim paneli (sipariş, stok talebi, kritik stok)
-- **Depo & Kategori Yönetimi** — Çoklu depo, depo bazlı stok listesi, kategori CRUD
-- **Tedarikçi Yönetimi** — Tedarikçi bilgileri (ad, e-posta, telefon, adres), ürün ilişkilendirme
-- **Kullanıcı Yönetimi** — Kullanıcı oluşturma, rol/depo/tedarikçi atama, şifre sıfırlama, aktif/pasif durumu (yalnızca ADMIN)
-- **Dashboard** — Role göre filtrelenmiş envanter ve demirbaş istatistikleri
+## Tech Stack
 
----
+React 18 · TypeScript 5.6 · Vite 5 · Tailwind CSS 3 · TanStack Query 5 · Axios · React Router 6 · Lucide icons · ESLint 9
 
-## Gereksinimler
-
-| Gereksinim | Versiyon |
-|---|---|
-| Node.js | 18+ |
-| npm | 9+ |
-| Backend API | `http://localhost:8080/api` adresinde çalışıyor olmalı |
-
-> Backend için [envanter-api](https://github.com/FatihErdogan1/envanter-api) Spring Boot projesi gereklidir. Arayüz, API'ye JWT Bearer token ile bağlanır.
-
----
-
-## Kurulum
-
-```bash
-# Bağımlılıkları yükle
-npm install
-
-# Geliştirme sunucusunu başlat
-npm run dev
-```
-
-Tarayıcıda `http://localhost:5173` adresini aç.
-
-### Diğer Komutlar
-
-```bash
-# Production build
-npm run build
-
-# Build önizlemesi
-npm run preview
-
-# Lint
-npm run lint
-```
-
----
-
-## Teknoloji Yığını
-
-| Paket | Versiyon | Amaç |
-|---|---|---|
-| React | 18 | UI bileşen katmanı |
-| TypeScript | 5.6 | Tip güvenliği |
-| Vite | 5 | Geliştirme sunucusu ve build aracı |
-| TailwindCSS | 3 | Stil (retro/cyberpunk tema) |
-| TanStack Query | 5 | Sunucu durum yönetimi ve önbellekleme |
-| Axios | 1.15 | HTTP istemcisi (JWT interceptor ile) |
-| React Router DOM | v6 | Sayfa yönlendirme |
-| Zustand | 5 | İstemci durum yönetimi |
-| Lucide React | — | İkonlar |
-
----
-
-## Proje Yapısı
+## Project Structure
 
 ```
 src/
-├── api/
-│   ├── client.ts          # Axios istemcisi, JWT interceptor, 401 otomatik çıkış
-│   └── index.ts           # Tüm API çağrıları (auth, CRUD, bildirimler, tedarikçi portali)
-├── components/
-│   ├── layout/
-│   │   ├── AppLayout.tsx      # Admin/Manager/Staff ana şablonu
-│   │   ├── Sidebar.tsx        # Yan menü + bildirim çanı
-│   │   ├── SupplierLayout.tsx # Tedarikçi portal şablonu
-│   │   └── SupplierSidebar.tsx
-│   └── ui/                # Button, Modal, DataTable, Input, OrderStatusBadge vb.
-├── context/
-│   ├── AuthContext.ts     # AuthUser arayüzü ve context tanımı
-│   └── AuthProvider.tsx   # JWT parse, localStorage kalıcılığı
-├── hooks/
-│   └── useAuth.ts         # isAdmin, isManager, isStaff, isSupplier, canManageOperations
-├── pages/
-│   ├── DashboardPage.tsx
-│   ├── ProductsPage.tsx
-│   ├── AssetsPage.tsx
-│   ├── InventoryPage.tsx
-│   ├── OrdersPage.tsx         # Tedarikçi sipariş yönetimi (admin/manager görünümü)
-│   ├── SuppliersPage.tsx
-│   ├── WarehousesPage.tsx
-│   ├── CategoriesPage.tsx
-│   ├── UsersPage.tsx
-│   ├── ProfilePage.tsx
-│   ├── LoginPage.tsx
-│   ├── RegisterPage.tsx
-│   ├── ForgotPasswordPage.tsx
-│   ├── ChangePasswordPage.tsx
-│   └── supplier/
-│       ├── SupplierProductsPage.tsx    # Tedarikçi: ürün listesi + fiyat güncelleme
-│       ├── SupplierOrdersPage.tsx      # Tedarikçi: kendi siparişleri + onayla/reddet/yola çıkar
-│       └── SupplierTransactionsPage.tsx # Tedarikçi: stok işlem geçmişi
-├── types/
-│   └── index.ts           # Tüm TypeScript tip tanımları
-└── utils/
-    └── errorUtils.ts      # API hata mesajı çıkarma yardımcısı
+├── api/          # Axios client (JWT + error interceptors) and API functions
+├── components/   # layouts (main + supplier portal) and reusable UI (DataTable, Modal, badges, …)
+├── context/      # auth context / provider
+├── hooks/        # useAuth, useNotifications
+├── pages/        # app pages; pages/supplier/ for the supplier portal
+├── types/        # shared TypeScript types
+└── utils/        # error helpers
 ```
 
----
+## Getting Started
 
-## Rol Yetkileri
+Prerequisites: Node.js 18+ and npm, plus a running [envanter-api](https://github.com/FatihErdogan1/envanter-api) instance. The API base URL is set to `http://localhost:8080/api` in `src/api/client.ts`.
 
-| Özellik | ADMIN | MANAGER | STAFF | SUPPLIER |
-|---|:---:|:---:|:---:|:---:|
-| Dashboard | ✓ | ✓ | — | — |
-| Ürün görüntüleme | ✓ | ✓ | ✓ | — |
-| Ürün ekleme / düzenleme | ✓ | ✓ | — | — |
-| Demirbaş işlemleri | ✓ | ✓ | Görüntüle | — |
-| Stok hareketleri | ✓ | ✓ | Görüntüle | — |
-| Depo / Kategori yönetimi | ✓ | ✓ | — | — |
-| Tedarikçi yönetimi | ✓ | ✓ | — | — |
-| Sipariş oluşturma | ✓ | ✓ | — | — |
-| Sipariş onaylama / reddetme | ✓ | — | — | — |
-| Sipariş teslim alma | ✓ | ✓ | — | — |
-| Kullanıcı yönetimi | ✓ | — | — | — |
-| Kendi ürünlerini görme | — | — | — | ✓ |
-| Ürün fiyatı güncelleme | — | — | — | ✓ |
-| Kendi siparişlerini yönetme | — | — | — | ✓ |
-
-> ADMIN tüm depolara erişebilir. MANAGER ve STAFF yalnızca kendi depolarındaki verileri görür. SUPPLIER kullanıcılar yalnızca `/supplier` portalına yönlendirilir.
-
----
-
-## Sipariş Durum Makinesi
-
-```
-BEKLIYOR ──[ADMIN onaylar]──→ ONAYLANDI ──[SUPPLIER yola çıkarır]──→ YOLDA ──[ADMIN/MANAGER teslim alır]──→ TESLİM_ALINDI
-    └──[ADMIN reddeder]──→ REDDEDILDI
+```bash
+npm install
+npm run dev       # http://localhost:5173
 ```
 
-Teslim alındığında stok otomatik olarak hedef depoya eklenir.
+Other scripts:
 
----
-
-## Tedarikçi Portalı
-
-SUPPLIER rolüyle giriş yapan kullanıcılar `/supplier` altındaki özel bir portala yönlendirilir:
-
-| Sayfa | Yol | Açıklama |
-|---|---|---|
-| Ürünlerim | `/supplier/urunlerim` | Tedarikçiye bağlı ürünleri listeler; fiyat güncelleme, depo bazlı stok ve işlem geçmişi |
-| Siparişler | `/supplier/siparisler` | Kendine ait siparişleri görür; bekleyenleri onaylayabilir, reddedebilir ve yola çıkarabilir |
-| İşlem Geçmişi | `/supplier/islem-gecmisi` | İlgili ürünlerin tüm stok hareketlerini listeler |
-
----
-
-## Bildirim Sistemi
-
-Sidebar üst köşesindeki çan ikonu okunmamış bildirim sayısını gösterir. Bildirimler:
-
-- Yeni stok talebi oluşturulduğunda (MANAGER/ADMIN'e)
-- Stok talebi onaylandığında veya reddedildiğinde (talep sahibine)
-- Sipariş durumu değiştiğinde (ilgili taraflara)
-- Ürün kritik stok seviyesine düştüğünde (ADMIN/MANAGER'a)
-
----
-
-## Backend Bağlantısı
-
-API base URL varsayılan olarak `http://localhost:8080/api` şeklinde tanımlıdır ([src/api/client.ts](src/api/client.ts)). Farklı bir adres için `.env` dosyası ekle:
-
-```env
-VITE_API_BASE_URL=http://localhost:8080/api
+```bash
+npm run build     # type-check + production build
+npm run preview   # preview the production build
+npm run lint      # ESLint
 ```
 
-JWT token `localStorage`'da saklanır. Token süresi dolduğunda (401 yanıtı) kullanıcı otomatik olarak çıkış yapılır ve giriş sayfasına yönlendirilir.
+## Related Repositories
+
+- [envanter-api](https://github.com/FatihErdogan1/envanter-api) — Spring Boot REST API used by this app
+- [envanter](https://github.com/FatihErdogan1/envanter) — earlier Java Swing desktop edition of the same project
 
 ---
 
-## İlgili Proje
-
-Bu arayüz, Spring Boot ile geliştirilmiş **[envanter-api](https://github.com/FatihErdogan1/envanter-api)** backend'i ile birlikte çalışmaktadır.
-
----
-
-## Lisans
-
-Bu proje özel kullanım amaçlıdır.
+**Author:** Fatih Erdoğan — developed together with Arda Ardıç ([@eyyorivaille](https://github.com/eyyorivaille))
